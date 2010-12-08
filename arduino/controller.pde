@@ -3,25 +3,27 @@
 #include "Ethernet.h"
 #include <WebServer.h>
 
+// Ethernet config
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 static uint8_t ip[] = { 192, 168, 1, 30 };
 WebServer webserver("", 80);
 
-String ampsKey ="AMPS:";
-String gaugeKey ="GAUGE:";
-
+// Pins which devices are attached to.
+// The servo driver and Ethernet shield tend to disable PWM pins 9 and above
 int ampMeterPin = 3;
 int gaugePin = 2;
 
-// The full scale deflection value for this gauge
-int fsd = 500;
 
-// PWM voltages for 0 to FSD
+// The full scale deflection value on the face of the amp meter
+int ampMeterFSD = 500;
+
+// PWM voltage corresponding to zero and FSD on the amp meter
 int min = 25 ;   
 int max = 251;
 int current = 0;
 int panDelay = 100;
 
+// Servo offsets for zero and FSD for the pressure gauge
 int gaugeMin = 79;
 int gaugeCenter = 105;
 int gaugeMax = 136;
@@ -31,8 +33,7 @@ Servo servo;
 #define NAMELEN 32
 #define VALUELEN 32
 
-
-void gaugeCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   server.httpSuccess();
   
   if (type != WebServer::HEAD) {
@@ -70,13 +71,9 @@ void gaugeCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 }
 
 
-
-
-void setup() {
-  Serial.begin(9600);
-  
+void setup() {  
   Ethernet.begin(mac, ip);
-  webserver.addCommand("index.html", &gaugeCmd);
+  webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
   
   pinMode(13, OUTPUT);
@@ -91,58 +88,25 @@ void setup() {
 
 
 void loop()  {
-  webserver.processConnection();
-  
-  String line = readLine();
-  Serial.flush();
-  
-  if (line.startsWith(ampsKey) == true) {
-    String value = value.concat(line.substring(ampsKey.length()));
-    int dest = stringToInt(value);        
-    if (dest >= 0 && dest <= fsd) {
-       setAmpMeterTo(dest);
-    }
-  }
-  
-  if (line.startsWith(gaugeKey) == true) {
-      String value = value.concat(line.substring(gaugeKey.length()));
-      int dest = stringToInt(value);                 
-      if (dest >= gaugeMin && dest <= gaugeMax) {
-        moveGaugeTo(dest);
-      }
-  }
-  
+  webserver.processConnection();  
   delay(10);
 }
 
 
-
-int stringToInt(String value) {
-    char numbers[100];
-    value.toCharArray(numbers, value.length() + 1);
-    int dest = atoi(numbers);
-    return dest;
-}
-
-
+// Calculate the correct PWM voltage required to move the amp meter needle to the desired position
 int setAmpMeterTo(int dest) {
-  Serial.print("Requested setting: ");
-  Serial.println(dest);
-  
-  double ratio =(double) dest / 500;
-  Serial.print("Ratio of FSD: ");
-  Serial.println(ratio);
-  
-  int offset = min + ((ratio) * (max - min));
-  
+  double ratioOfFSD =(double) dest / ampMeterFSD;  
+  int offset = min + ((ratioOfFSD) * (max - min));  
   if (offset >= min && offset <= max) {
     panAmpMeterFromTo(current, offset);  
-  } 
- 
+  }
   return offset;
 }
 
 
+// Move the needle in an orderly fashion to avoid recoil.
+// The needle has a fair amount of momentum and we don't want to damage the spring with sudden stops.
+// Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
 void panAmpMeterFromTo(int start, int offset) { 
     int position = start;
     while (position < offset && offset <= max) {
@@ -165,41 +129,26 @@ void panAmpMeterFromTo(int start, int offset) {
 }
 
 
-
-
+// Slowly walk the gauge needle to the desired position to avoid stressing the mechanism with snappy movements.
 void moveGaugeTo(int dest) {
-    Serial.print("Moving gauge to: ");
-    Serial.println(dest);
-    
-   digitalWrite(13, HIGH);
    int currentPos = servo.read(); 
    while (currentPos < dest && dest <= gaugeMax) {
        currentPos = currentPos + 1;
-       Serial.print("Current: ");
-       Serial.println(currentPos, DEC);
        servo.write(currentPos);
        delay(panDelay);
    }
    
    while (currentPos > dest && dest >= gaugeMin) {
       currentPos = currentPos - 1;
-      Serial.print("Current: ");
-      Serial.println(currentPos, DEC);
       servo.write(currentPos);
       delay(panDelay);
    }
-   digitalWrite(13, LOW);   
 }
 
 
-String readLine() {
-  String line;
-  while(Serial.available()) {  // buffer up a line
-    char c;
-    c = Serial.read();
-    line = line + c;
-  }
-  line = line.trim();
-  Serial.flush();
-  return line;
+int stringToInt(String value) {
+    char numbers[100];
+    value.toCharArray(numbers, value.length() + 1);
+    int dest = atoi(numbers);
+    return dest;
 }
