@@ -1,1 +1,3 @@
 A Zabbix/Arduino based analog monitoring system.
+
+Presents vital statitics from the production environment on a collection of amp meters and pressure gauges.
