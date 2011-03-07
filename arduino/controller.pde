@@ -82,7 +82,6 @@ void setup() {
   pinMode(ampMeterPin, OUTPUT);
   setAmpMeterTo(0);
   
-  servo.attach(gaugePin, min, max);
   moveGaugeTo(gaugeCenter);
 }
 
@@ -131,6 +130,7 @@ void panAmpMeterFromTo(int start, int offset) {
 
 // Slowly walk the gauge needle to the desired position to avoid stressing the mechanism with snappy movements.
 void moveGaugeTo(int dest) {
+   servo.attach(gaugePin, min, max);
    int currentPos = servo.read(); 
    while (currentPos < dest && dest <= gaugeMax) {
        currentPos = currentPos + 1;
@@ -143,6 +143,8 @@ void moveGaugeTo(int dest) {
       servo.write(currentPos);
       delay(panDelay);
    }
+   delay(2000);
+   servo.detach();
 }
 
 
