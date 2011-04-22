@@ -1,7 +1,7 @@
 #include <Servo.h>
 #include <SPI.h>
 #include "Ethernet.h"
-#include <WebServer.h>
+#include <WebServer.h>  // http://code.google.com/p/webduino/
 
 // Ethernet config
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -57,7 +57,7 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
         
         if (strcmp(name, "amps") == 0) {         
           int dest = stringToInt(value);                 
-          if (dest >= 0 && dest <= fsd) {
+          if (dest >= 0 && dest <= ampMeterFSD) {
              server.print(name);
              server.print(":");
              server.print(dest);
