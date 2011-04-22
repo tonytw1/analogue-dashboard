@@ -18,8 +18,8 @@ int gaugePin = 2;
 int ampMeterFSD = 500;
 
 // PWM voltage corresponding to zero and FSD on the amp meter
-int min = 25 ;   
-int max = 251;
+int min = 24; 
+int max = 253;
 int current = 0;
 int panDelay = 100;
 
@@ -71,7 +71,9 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
 }
 
 
-void setup() {  
+void setup() {
+  Serial.begin(9600);
+  
   Ethernet.begin(mac, ip);
   webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
@@ -81,7 +83,18 @@ void setup() {
   
   pinMode(ampMeterPin, OUTPUT);
   setAmpMeterTo(0);
-  
+  delay(2000);
+  setAmpMeterTo(100);
+  delay(2000);
+  setAmpMeterTo(200);
+  delay(2000);
+  setAmpMeterTo(300);
+  delay(2000);
+  setAmpMeterTo(400);
+  delay(2000);
+  setAmpMeterTo(500);
+  delay(2000);
+  setAmpMeterTo(0);
   moveGaugeTo(gaugeCenter);
 }
 
