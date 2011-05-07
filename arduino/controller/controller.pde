@@ -16,7 +16,6 @@ int gaugePin = 2;
 int ampMeterPin = 3;
 int voltMeterPin = 5;
 
-
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
 
@@ -25,13 +24,12 @@ HashMap<int,int> positions = HashMap<int,int>(positionRawArray, HASH_SIZE );
 
 HashType<int,int> fsdRawArray[HASH_SIZE];
 HashMap<int,int> fsds = HashMap<int,int>(fsdRawArray, HASH_SIZE ); 
-  
-  
-// PWM voltage corresponding to zero and FSD on the amp meter
-int ampMin = 0; 
-int ampMax = 250;
-int voltMin = 0; 
-int voltMax = 250;
+
+HashType<int,int> zeroedPinoutsArray[HASH_SIZE];
+HashMap<int,int> zeroedPinouts = HashMap<int,int>(zeroedPinoutsArray, HASH_SIZE );
+
+HashType<int,int> fsdPinoutsArray[HASH_SIZE];
+HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
 int panDelay = 100;
 
@@ -73,7 +71,7 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
              server.print(name);
              server.print(":");
              server.print(dest);
-             server.print(setAmpMeterTo(dest));
+             server.print(setMeterTo(ampMeterPin, dest));
           }
         }
                 
@@ -90,10 +88,17 @@ void setup() {
   positions[1](voltMeterPin, 0);
   positions[2](gaugePin, 0);
   
+  // PWM voltage corresponding to zero and FSD for meters
+  zeroedPinouts[0](ampMeterPin, 0);
+  zeroedPinouts[1](voltMeterPin, 0);
+  
+  fsdPinouts[0](ampMeterPin, 250);
+  fsdPinouts[1](voltMeterPin, 250);
+  
   // The full scale deflection value on the face of the amp meter
   fsds[0](ampMeterPin, 100);
   fsds[1](voltMeterPin, 80);
-  
+   
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
   pinMode(ampMeterPin, OUTPUT);
@@ -105,12 +110,12 @@ void setup() {
   webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
   
-  setAmpMeterTo(20);
-  setVoltMeterTo(20);
+  setMeterTo(ampMeterPin, 20);
+  setMeterTo(voltMeterPin, 20);
   delay(2000);
  
-  setAmpMeterTo(0);
-  setVoltMeterTo(0);
+  setMeterTo(ampMeterPin, 0);
+  setMeterTo(volMeterPin, 0);
   moveGaugeTo(gaugeCenter);
 }
 
@@ -121,32 +126,28 @@ void loop()  {
 }
 
 
-// Calculate the correct PWM voltage required to move the amp meter needle to the desired position
-int setAmpMeterTo(int dest) {   
-  double ratioOfFSD =(double) dest / positions.getValueOf(ampMeterPin);  
-  int offset = ampMin + ((ratioOfFSD) * (ampMax - ampMin));  
-  if (offset >= ampMin && offset <= ampMax) {
-    int currentAmpMeterPosition = positions.getValueOf(ampMeterPin);
-    panMeterFromTo(ampMeterPin, offset);  
+// Calculate the correct PWM voltage required to move the a meter needle to the desired position
+int setMeterTo(int pin, int dest) {   
+  double ratioOfFSD =(double) dest / positions.getValueOf(pin);  
+  
+  int zeroedPWMValue = zeroedPinouts.getValueof(pin);
+  int fsdPWMValue = fsdPinouts.getValueof(pin);
+  
+  int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
+  if (offset >= zeroedPWMValue && offset <= fsdPWMValue) {
+    int currentMeterPosition = positions.getValueOf(pin);
+    panMeterFromTo(pin, offset);
   }
   return offset;
 }
 
-int setVoltMeterTo(int dest) {
-  double ratioOfFSD =(double) dest / positions.getValueOf(voltMeterPin);  
-  int offset = voltMin + ((ratioOfFSD) * (voltMax - voltMin));  
-  if (offset >= voltMin && offset <= voltMax) {
-     panMeterFromTo(voltMeterPin, offset);  
-  }
-  return offset;
-}
 
 // Move the needle in an orderly fashion to avoid recoil.
 // The needle has a fair amount of momentum and we don't want to damage the spring with sudden stops.
 // Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
 void panMeterFromTo(int pin, int offset) { 
     int currentPosition = positions.getValueOf(pin);
-    while (currentPosition < offset && offset <= ampMax) {
+    while (currentPosition < offset && offset <= fsdPinouts.getValueof(pin)) {
        currentPosition = currentPosition + 1;
        Serial.print("Current: ");
        Serial.println(currentPosition, DEC);
@@ -154,7 +155,7 @@ void panMeterFromTo(int pin, int offset) {
        delay(panDelay);
      }
    
-     while (currentPosition > offset && offset >= ampMin) {
+     while (currentPosition > offset && offset >=  zeroedPinouts.getValueof(pin)) {
       currentPosition = currentPosition - 1;
       Serial.print("Current: ");
       Serial.println(currentPosition, DEC);
