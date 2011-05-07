@@ -17,8 +17,8 @@ int voltMeterPin = 5;
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
 
-HashType<int,int> positionRawArray[HASH_SIZE];
-HashMap<int,int> positions = HashMap<int,int>(positionRawArray, HASH_SIZE ); 
+HashType<int,int> positionsRawArray[HASH_SIZE];
+HashMap<int,int> positions = HashMap<int,int>(positionsRawArray, HASH_SIZE ); 
 
 HashType<int,int> fsdRawArray[HASH_SIZE];
 HashMap<int,int> fsds = HashMap<int,int>(fsdRawArray, HASH_SIZE ); 
@@ -149,7 +149,8 @@ void panMeterFromTo(int pin, int offset) {
 }
 
 void recordPosition(int pin, int position) {
-   //TODO this hash implementation has no put method!
+   int index = positions.getIndexOf(pin);
+   positionsRawArray[index].setValue(position);
 }
 
 int stringToInt(String value) {
