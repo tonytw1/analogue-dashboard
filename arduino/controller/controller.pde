@@ -55,12 +55,21 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
              server.print(setMeterTo(ampMeterPin, dest));
           }
         }
-                
+        
+        if (strcmp(name, "volts") == 0) {
+          int dest = stringToInt(value);                
+          if (dest >= 0 && dest <= fsds.getValueOf(ampMeterPin)) {
+             server.print(name);
+             server.print(":");
+             server.print(dest);
+             server.print(setMeterTo(voltMeterPin, dest));
+          }
+        }
+        
       }
     }
   }
 }
-
 
 
 void setup() {  
@@ -69,7 +78,7 @@ void setup() {
   zeroedPinouts[1](voltMeterPin, 0);
   
   fsdPinouts[0](ampMeterPin, 250);
-  fsdPinouts[1](voltMeterPin, 250);
+  fsdPinouts[1](voltMeterPin, 253);
   
   // The full scale deflection value on the face of the amp meter
   fsds[0](ampMeterPin, 100);
@@ -88,28 +97,36 @@ void setup() {
   digitalWrite(13, LOW);
   
   // Start serial and Ethernet comms
-  Serial.begin(9600);    
+  Serial.begin(9600);
   Ethernet.begin(mac, ip);
   webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
+    
+  Serial.println("Starting up");
   
-  setMeterTo(ampMeterPin, 20);
-  setMeterTo(voltMeterPin, 20);
+  setMeterTo(ampMeterPin, 10);
+  setMeterTo(voltMeterPin, 10);
   delay(2000);
  
   setMeterTo(ampMeterPin, 0);
   setMeterTo(voltMeterPin, 0);
+  delay(2000);
 }
+
 
 void loop()  {
   webserver.processConnection();  
-  delay(10);
 }
 
 
 // Calculate the correct PWM voltage required to move the a meter needle to the desired position
-int setMeterTo(int pin, int dest) {   
-  double ratioOfFSD =(double) dest / positions.getValueOf(pin);  
+int setMeterTo(int pin, int dest) {
+  Serial.print("Setting meter ");
+  Serial.print(pin, DEC);
+  Serial.print(" to ");  
+  Serial.println(dest, DEC);
+  
+  double ratioOfFSD =(double) dest / fsds.getValueOf(pin);
   
   int zeroedPWMValue = zeroedPinouts.getValueOf(pin);
   int fsdPWMValue = fsdPinouts.getValueOf(pin);
@@ -128,19 +145,30 @@ int setMeterTo(int pin, int dest) {
 // Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
 void panMeterFromTo(int pin, int offset) { 
     int currentPosition = positions.getValueOf(pin);
+    
     while (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
-       currentPosition = currentPosition + 1;
-       Serial.print("Current: ");
-       Serial.println(currentPosition, DEC);
-       analogWrite(ampMeterPin, currentPosition);
-       delay(panDelay);
+      Serial.print("Panning meter ");
+      Serial.print(pin, DEC);
+      Serial.print(" from ");
+      Serial.print(currentPosition, DEC);
+      Serial.print(" to ");
+      Serial.println(offset, DEC);
+  
+      currentPosition = currentPosition + 1;
+      analogWrite(pin, currentPosition);
+      delay(panDelay);
      }
    
      while (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {
-      currentPosition = currentPosition - 1;
-      Serial.print("Current: ");
-      Serial.println(currentPosition, DEC);
-      analogWrite(ampMeterPin, currentPosition);
+      Serial.print("Panning meter ");
+      Serial.print(pin, DEC);
+      Serial.print(" from ");
+      Serial.print(currentPosition, DEC);
+      Serial.print(" to ");
+      Serial.println(offset, DEC);
+  
+      currentPosition = currentPosition - 1;     
+      analogWrite(pin, currentPosition);
       delay(panDelay);
    }
    
