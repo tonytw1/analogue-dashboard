@@ -19,13 +19,14 @@ int voltMeterPin = 5;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
-HashType<int,int> hashRawArray[HASH_SIZE]; 
-HashMap<int,int> positions = HashMap<int,int>( hashRawArray , HASH_SIZE ); 
 
-// The full scale deflection value on the face of the amp meter
-int ampMeterFSD = 100;
-int voltMeterFSD = 80;
+HashType<int,int> positionRawArray[HASH_SIZE];
+HashMap<int,int> positions = HashMap<int,int>(positionRawArray, HASH_SIZE ); 
 
+HashType<int,int> fsdRawArray[HASH_SIZE];
+HashMap<int,int> fsds = HashMap<int,int>(fsdRawArray, HASH_SIZE ); 
+  
+  
 // PWM voltage corresponding to zero and FSD on the amp meter
 int ampMin = 0; 
 int ampMax = 250;
@@ -68,7 +69,7 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
         
         if (strcmp(name, "amps") == 0) {         
           int dest = stringToInt(value);                 
-          if (dest >= 0 && dest <= ampMeterFSD) {
+          if (dest >= 0 && dest <= fsds.getValueOf(ampMeterPin)) {
              server.print(name);
              server.print(":");
              server.print(dest);
@@ -84,11 +85,15 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
 
 void setup() {
   
-  // All devices are initially zeroed
+  // All devices are initially zeroed  TODO - need to be able to define rest locations for all - ie. gauges should reset in center - 0 could be of scale 
   positions[0](ampMeterPin, 0);
   positions[1](voltMeterPin, 0);
   positions[2](gaugePin, 0);
-       
+  
+  // The full scale deflection value on the face of the amp meter
+  fsds[0](ampMeterPin, 100);
+  fsds[1](voltMeterPin, 80);
+  
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
   pinMode(ampMeterPin, OUTPUT);
@@ -99,9 +104,7 @@ void setup() {
   Ethernet.begin(mac, ip);
   webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
-    
-    
- 
+  
   setAmpMeterTo(20);
   setVoltMeterTo(20);
   delay(2000);
@@ -120,7 +123,7 @@ void loop()  {
 
 // Calculate the correct PWM voltage required to move the amp meter needle to the desired position
 int setAmpMeterTo(int dest) {   
-  double ratioOfFSD =(double) dest / ampMeterFSD;  
+  double ratioOfFSD =(double) dest / positions.getValueOf(ampMeterPin);  
   int offset = ampMin + ((ratioOfFSD) * (ampMax - ampMin));  
   if (offset >= ampMin && offset <= ampMax) {
     int currentAmpMeterPosition = positions.getValueOf(ampMeterPin);
@@ -130,7 +133,7 @@ int setAmpMeterTo(int dest) {
 }
 
 int setVoltMeterTo(int dest) {
-  double ratioOfFSD =(double) dest / voltMeterFSD;  
+  double ratioOfFSD =(double) dest / positions.getValueOf(voltMeterPin);  
   int offset = voltMin + ((ratioOfFSD) * (voltMax - voltMin));  
   if (offset >= voltMin && offset <= voltMax) {
      panMeterFromTo(voltMeterPin, offset);  
