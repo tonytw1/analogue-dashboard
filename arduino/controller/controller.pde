@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include "Ethernet.h"
 #include <WebServer.h>  // http://code.google.com/p/webduino/
+#include <HashMap.h>
 
 // Ethernet config
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -9,17 +10,21 @@ static uint8_t ip[] = { 192, 168, 1, 30 };
 WebServer webserver("", 80);
 
 // Pins which devices are attached to.
-// The servo driver and Ethernet shield tend to disable PWM pins 9 and above
+// The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
+// PWM doesn't seeem to be available on pin 4 ethier.
 int gaugePin = 2;
 int ampMeterPin = 3;
 int voltMeterPin = 5;
 
 
+// Remember the current positions on each device
+const byte HASH_SIZE = 5; 
+HashType<int,int> hashRawArray[HASH_SIZE]; 
+HashMap<int,int> positions = HashMap<int,int>( hashRawArray , HASH_SIZE ); 
 
 // The full scale deflection value on the face of the amp meter
 int ampMeterFSD = 100;
 int voltMeterFSD = 80;
-
 
 // PWM voltage corresponding to zero and FSD on the amp meter
 int ampMin = 0; 
@@ -27,8 +32,6 @@ int ampMax = 250;
 int voltMin = 0; 
 int voltMax = 250;
 
-int currentAmpMeter = 0;
-int currentVoltMeter = 0;
 int panDelay = 100;
 
 // Servo offsets for zero and FSD for the pressure gauge
@@ -80,17 +83,25 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
 
 
 void setup() {
-  Serial.begin(9600);
   
+  // All devices are initially zeroed
+  positions[0](ampMeterPin, 0);
+  positions[1](voltMeterPin, 0);
+  positions[2](gaugePin, 0);
+       
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+  pinMode(ampMeterPin, OUTPUT);
+  pinMode(voltMeterPin, OUTPUT);
+  
+  // Start serial and Ethernet comms
+  Serial.begin(9600);    
   Ethernet.begin(mac, ip);
   webserver.addCommand("index.html", &mainCmd);
   webserver.begin();
-  
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
-  
-  pinMode(ampMeterPin, OUTPUT);
-  pinMode(voltMeterPin, OUTPUT);
+    
+    
+ 
   setAmpMeterTo(20);
   setVoltMeterTo(20);
   delay(2000);
@@ -108,11 +119,12 @@ void loop()  {
 
 
 // Calculate the correct PWM voltage required to move the amp meter needle to the desired position
-int setAmpMeterTo(int dest) {
+int setAmpMeterTo(int dest) {   
   double ratioOfFSD =(double) dest / ampMeterFSD;  
   int offset = ampMin + ((ratioOfFSD) * (ampMax - ampMin));  
   if (offset >= ampMin && offset <= ampMax) {
-    panAmpMeterFromTo(currentAmpMeter, offset);  
+    int currentAmpMeterPosition = positions.getValueOf(ampMeterPin);
+    panMeterFromTo(ampMeterPin, offset);  
   }
   return offset;
 }
@@ -121,7 +133,7 @@ int setVoltMeterTo(int dest) {
   double ratioOfFSD =(double) dest / voltMeterFSD;  
   int offset = voltMin + ((ratioOfFSD) * (voltMax - voltMin));  
   if (offset >= voltMin && offset <= voltMax) {
-    panVoltMeterFromTo(currentVoltMeter, offset);  
+     panMeterFromTo(voltMeterPin, offset);  
   }
   return offset;
 }
@@ -129,49 +141,31 @@ int setVoltMeterTo(int dest) {
 // Move the needle in an orderly fashion to avoid recoil.
 // The needle has a fair amount of momentum and we don't want to damage the spring with sudden stops.
 // Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
-void panAmpMeterFromTo(int start, int offset) { 
-    int position = start;
-    while (position < offset && offset <= ampMax) {
-       position = position + 1;
+void panMeterFromTo(int pin, int offset) { 
+    int currentPosition = positions.getValueOf(pin);
+    while (currentPosition < offset && offset <= ampMax) {
+       currentPosition = currentPosition + 1;
        Serial.print("Current: ");
-       Serial.println(position, DEC);
-       analogWrite(ampMeterPin, position);
+       Serial.println(currentPosition, DEC);
+       analogWrite(ampMeterPin, currentPosition);
        delay(panDelay);
      }
    
-     while (position > offset && offset >= ampMin) {
-      position = position - 1;
+     while (currentPosition > offset && offset >= ampMin) {
+      currentPosition = currentPosition - 1;
       Serial.print("Current: ");
-      Serial.println(position, DEC);
-      analogWrite(ampMeterPin, position);
+      Serial.println(currentPosition, DEC);
+      analogWrite(ampMeterPin, currentPosition);
       delay(panDelay);
    }
-   currentAmpMeter = position;
-   return;
-}
-
-
-
-void panVoltMeterFromTo(int start, int offset) { 
-    int position = start;
-    while (position < offset && offset <= voltMax) {
-       position = position + 1;
-       Serial.println(position, DEC);
-       analogWrite(voltMeterPin, position);
-       delay(panDelay);
-     }
    
-     while (position > offset && offset >= voltMin) {
-      position = position - 1;
-      Serial.print("Current: ");
-      Serial.println(position, DEC);
-      analogWrite(voltMeterPin, position);
-      delay(panDelay);
-   }
-   currentVoltMeter = position;
+   recordPosition(pin, currentPosition);
    return;
 }
 
+void recordPosition(int pin, int position) {
+   //TODO this hash implementation has no put method!
+}
 
 // Slowly walk the gauge needle to the desired position to avoid stressing the mechanism with snappy movements.
 void moveGaugeTo(int dest) {
