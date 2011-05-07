@@ -1,4 +1,3 @@
-#include <Servo.h>
 #include <SPI.h>
 #include "Ethernet.h"
 #include <WebServer.h>  // http://code.google.com/p/webduino/
@@ -12,7 +11,6 @@ WebServer webserver("", 80);
 // Pins which devices are attached to.
 // The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
 // PWM doesn't seeem to be available on pin 4 ethier.
-int gaugePin = 2;
 int ampMeterPin = 3;
 int voltMeterPin = 5;
 
@@ -33,17 +31,8 @@ HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
 int panDelay = 100;
 
-// Servo offsets for zero and FSD for the pressure gauge
-int gaugeMin = 79;
-int gaugeCenter = 105;
-int gaugeMax = 136;
-
-Servo servo;
-
 #define NAMELEN 32
 #define VALUELEN 32
-
-
 void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   server.httpSuccess();
   
@@ -56,15 +45,6 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
     while (strlen(url_tail)) {
       rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
       if (!(rc == URLPARAM_EOS)) {
-        if (strcmp(name, "gauge") == 0) {         
-          int dest = stringToInt(value);                 
-          if (dest >= gaugeMin && dest <= gaugeMax) {
-             server.print(name);
-             server.print(":");
-             server.print(dest);
-             moveGaugeTo(dest);
-          }
-        }
         
         if (strcmp(name, "amps") == 0) {         
           int dest = stringToInt(value);                 
@@ -98,7 +78,6 @@ void setup() {
   // All devices are initially zeroed  TODO - need to be able to define rest locations for all - ie. gauges should reset in center - 0 could be of scale 
   positions[0](ampMeterPin, 0);
   positions[1](voltMeterPin, 0);
-  positions[2](gaugePin, 0);
   
   // Power up meter pins
   pinMode(ampMeterPin, OUTPUT);
@@ -120,9 +99,7 @@ void setup() {
  
   setMeterTo(ampMeterPin, 0);
   setMeterTo(voltMeterPin, 0);
-  moveGaugeTo(gaugeCenter);
 }
-
 
 void loop()  {
   webserver.processConnection();  
@@ -174,26 +151,6 @@ void panMeterFromTo(int pin, int offset) {
 void recordPosition(int pin, int position) {
    //TODO this hash implementation has no put method!
 }
-
-// Slowly walk the gauge needle to the desired position to avoid stressing the mechanism with snappy movements.
-void moveGaugeTo(int dest) {
-   servo.attach(gaugePin, 0, 250);  // TODO define as constants
-   int currentPos = servo.read(); 
-   while (currentPos < dest && dest <= gaugeMax) {
-       currentPos = currentPos + 1;
-       servo.write(currentPos);
-       delay(panDelay);
-   }
-   
-   while (currentPos > dest && dest >= gaugeMin) {
-      currentPos = currentPos - 1;
-      servo.write(currentPos);
-      delay(panDelay);
-   }
-   delay(2000);
-   servo.detach();
-}
-
 
 int stringToInt(String value) {
     char numbers[100];
