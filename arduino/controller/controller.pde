@@ -43,6 +43,7 @@ Servo servo;
 #define NAMELEN 32
 #define VALUELEN 32
 
+
 void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   server.httpSuccess();
   
@@ -81,13 +82,8 @@ void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
 }
 
 
-void setup() {
-  
-  // All devices are initially zeroed  TODO - need to be able to define rest locations for all - ie. gauges should reset in center - 0 could be of scale 
-  positions[0](ampMeterPin, 0);
-  positions[1](voltMeterPin, 0);
-  positions[2](gaugePin, 0);
-  
+
+void setup() {  
   // PWM voltage corresponding to zero and FSD for meters
   zeroedPinouts[0](ampMeterPin, 0);
   zeroedPinouts[1](voltMeterPin, 0);
@@ -98,11 +94,19 @@ void setup() {
   // The full scale deflection value on the face of the amp meter
   fsds[0](ampMeterPin, 100);
   fsds[1](voltMeterPin, 80);
-   
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
+  
+  // All devices are initially zeroed  TODO - need to be able to define rest locations for all - ie. gauges should reset in center - 0 could be of scale 
+  positions[0](ampMeterPin, 0);
+  positions[1](voltMeterPin, 0);
+  positions[2](gaugePin, 0);
+  
+  // Power up meter pins
   pinMode(ampMeterPin, OUTPUT);
   pinMode(voltMeterPin, OUTPUT);
+  
+  // Onboard LED pin used to signal activity only
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
   
   // Start serial and Ethernet comms
   Serial.begin(9600);    
@@ -115,7 +119,7 @@ void setup() {
   delay(2000);
  
   setMeterTo(ampMeterPin, 0);
-  setMeterTo(volMeterPin, 0);
+  setMeterTo(voltMeterPin, 0);
   moveGaugeTo(gaugeCenter);
 }
 
@@ -130,8 +134,8 @@ void loop()  {
 int setMeterTo(int pin, int dest) {   
   double ratioOfFSD =(double) dest / positions.getValueOf(pin);  
   
-  int zeroedPWMValue = zeroedPinouts.getValueof(pin);
-  int fsdPWMValue = fsdPinouts.getValueof(pin);
+  int zeroedPWMValue = zeroedPinouts.getValueOf(pin);
+  int fsdPWMValue = fsdPinouts.getValueOf(pin);
   
   int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
   if (offset >= zeroedPWMValue && offset <= fsdPWMValue) {
@@ -147,7 +151,7 @@ int setMeterTo(int pin, int dest) {
 // Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
 void panMeterFromTo(int pin, int offset) { 
     int currentPosition = positions.getValueOf(pin);
-    while (currentPosition < offset && offset <= fsdPinouts.getValueof(pin)) {
+    while (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
        currentPosition = currentPosition + 1;
        Serial.print("Current: ");
        Serial.println(currentPosition, DEC);
@@ -155,7 +159,7 @@ void panMeterFromTo(int pin, int offset) {
        delay(panDelay);
      }
    
-     while (currentPosition > offset && offset >=  zeroedPinouts.getValueof(pin)) {
+     while (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {
       currentPosition = currentPosition - 1;
       Serial.print("Current: ");
       Serial.println(currentPosition, DEC);
