@@ -1,12 +1,15 @@
+#include <PubSubClient.h>
+
 #include <SPI.h>
 #include "Ethernet.h"
-#include <WebServer.h>  // http://code.google.com/p/webduino/
 #include <HashMap.h>
 
 // Ethernet config
-static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-static uint8_t ip[] = { 192, 168, 1, 30 };
-WebServer webserver("", 80);
+#include <PubSubClient.h>
+
+byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+byte ip[] = { 192, 168, 1, 30 };
+byte server[] = { 192, 168, 1, 10 };
 
 // Pins which devices are attached to.
 // The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
@@ -29,48 +32,9 @@ HashMap<int,int> zeroedPinouts = HashMap<int,int>(zeroedPinoutsArray, HASH_SIZE 
 HashType<int,int> fsdPinoutsArray[HASH_SIZE];
 HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
-int panDelay = 100;
+int panDelay = 80;
 
-#define NAMELEN 32
-#define VALUELEN 32
-void mainCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  server.httpSuccess();
-  
-  if (type != WebServer::HEAD) {
-    
-    URLPARAM_RESULT rc;
-    bool repeat;
-    char name[NAMELEN], value[VALUELEN];
-   
-    while (strlen(url_tail)) {
-      rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-      if (!(rc == URLPARAM_EOS)) {
-        
-        if (strcmp(name, "amps") == 0) {         
-          int dest = stringToInt(value);                 
-          if (dest >= 0 && dest <= fsds.getValueOf(ampMeterPin)) {
-             server.print(name);
-             server.print(":");
-             server.print(dest);
-             server.print(setMeterTo(ampMeterPin, dest));
-          }
-        }
-        
-        if (strcmp(name, "volts") == 0) {
-          int dest = stringToInt(value);                
-          if (dest >= 0 && dest <= fsds.getValueOf(ampMeterPin)) {
-             server.print(name);
-             server.print(":");
-             server.print(dest);
-             server.print(setMeterTo(voltMeterPin, dest));
-          }
-        }
-        
-      }
-    }
-  }
-}
-
+PubSubClient client(server, 1883, callback);
 
 void setup() {  
   // PWM voltage corresponding to zero and FSD for meters
@@ -98,33 +62,66 @@ void setup() {
   
   // Start serial and Ethernet comms
   Serial.begin(9600);
-  Ethernet.begin(mac, ip);
-  webserver.addCommand("index.html", &mainCmd);
-  webserver.begin();
     
   Serial.println("Starting up");
   
-  setMeterTo(ampMeterPin, 10);
-  setMeterTo(voltMeterPin, 10);
-  delay(2000);
+  //setMeterTo(ampMeterPin, 10);
+  //setMeterTo(voltMeterPin, 10);
+  //delay(2000);
  
   setMeterTo(ampMeterPin, 0);
   setMeterTo(voltMeterPin, 0);
-  delay(2000);
+  //delay(2000);
+  
+  Ethernet.begin(mac, ip);
+    
+  Serial.println("Subscribing");
+  if (client.connect("zabbix")) {
+      Serial.println("Connected");
+      client.publish("gauges","arduino connected");
+      client.subscribe("zabbix");
+  } else {
+      Serial.println("Failed to connect");
+  }
 }
-
 
 void loop()  {
-  webserver.processConnection();  
+  client.loop();
 }
 
+void callback(char* topic, byte* payload, unsigned int length) {
+   //check for paylaod; is it there at all ?
+  if (length > 0) {    
+      char *cstring = (char *) payload;
+      String payLoadString = (cstring);
+  
+      if(payLoadString.startsWith("10047")) {
+         String valueString = payLoadString.substring(6, payLoadString.length() -1); // length includes null terminater        
+         int dest = stringToInt(valueString);
+         
+         String message = String("Requested to move volt meter to: ") + String(dest);
+         publishString(message);
+         
+         if (dest >= 0 && dest <= fsds.getValueOf(voltMeterPin)) {
+           String message = String("Moving volt meter to: ") + String(dest);
+           publishString(message);
+           
+           setMeterTo(voltMeterPin, dest);
+           
+         } else {
+            String message = String("Out of range: ") + String(dest);
+            publishString(message);
+          }         
+      }
+      
+  }
+  
+}
 
 // Calculate the correct PWM voltage required to move the a meter needle to the desired position
 int setMeterTo(int pin, int dest) {
-  Serial.print("Setting meter ");
-  Serial.print(pin, DEC);
-  Serial.print(" to ");  
-  Serial.println(dest, DEC);
+  String message = "Setting meter " + String(pin, DEC) + " to " + String(dest, DEC);
+  publishString(message);
   
   double ratioOfFSD =(double) dest / fsds.getValueOf(pin);
   
@@ -143,35 +140,30 @@ int setMeterTo(int pin, int dest) {
 // Move the needle in an orderly fashion to avoid recoil.
 // The needle has a fair amount of momentum and we don't want to damage the spring with sudden stops.
 // Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
-void panMeterFromTo(int pin, int offset) { 
+void panMeterFromTo(int pin, int offset) {
+    String message = "Panning meter " + String(pin, DEC) + " to PWM: " + String(offset, DEC);
+    publishString(message);
+    
     int currentPosition = positions.getValueOf(pin);
     
     while (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
-      Serial.print("Panning meter ");
-      Serial.print(pin, DEC);
-      Serial.print(" from ");
-      Serial.print(currentPosition, DEC);
-      Serial.print(" to ");
-      Serial.println(offset, DEC);
-  
+      String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
+      publishString(message);
+       
       currentPosition = currentPosition + 1;
       analogWrite(pin, currentPosition);
       delay(panDelay);
      }
    
-     while (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {
-      Serial.print("Panning meter ");
-      Serial.print(pin, DEC);
-      Serial.print(" from ");
-      Serial.print(currentPosition, DEC);
-      Serial.print(" to ");
-      Serial.println(offset, DEC);
-  
-      currentPosition = currentPosition - 1;     
-      analogWrite(pin, currentPosition);
-      delay(panDelay);
+     while (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {       
+        String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
+        publishString(message);
+        currentPosition = currentPosition - 1;     
+        analogWrite(pin, currentPosition);
+        delay(panDelay);
    }
    
+   publishString(String("Finished panning"));
    recordPosition(pin, currentPosition);
    return;
 }
@@ -186,4 +178,10 @@ int stringToInt(String value) {
     value.toCharArray(numbers, value.length() + 1);
     int dest = atoi(numbers);
     return dest;
+}
+
+void publishString(String message) {
+    char charBuf[100];
+    message.toCharArray(charBuf, 100);
+    client.publish("gauges", charBuf);
 }
