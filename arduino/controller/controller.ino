@@ -32,7 +32,7 @@ HashMap<int,int> zeroedPinouts = HashMap<int,int>(zeroedPinoutsArray, HASH_SIZE 
 HashType<int,int> fsdPinoutsArray[HASH_SIZE];
 HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
-int panDelay = 80;
+int panDelay = 100;
 
 PubSubClient client(server, 1883, callback);
 
@@ -92,11 +92,19 @@ void loop()  {
 void callback(char* topic, byte* payload, unsigned int length) {
    //check for paylaod; is it there at all ?
   if (length > 0) {    
-      char *cstring = (char *) payload;
-      String payLoadString = (cstring);
+    
+    // create character buffer with ending null terminator (string)
+    int i = 0;
+    char message_buff[100];
+    for(i=0; i<length; i++) {
+      message_buff[i] = payload[i];
+    }
+    message_buff[i] = '\0';
   
-      if(payLoadString.startsWith("10047")) {
-         String valueString = payLoadString.substring(6, payLoadString.length() -1); // length includes null terminater        
+    String payLoadString = String(message_buff);
+    
+    if(payLoadString.startsWith("10047")) {
+         String valueString = payLoadString.substring(6, payLoadString.length());
          int dest = stringToInt(valueString);
          
          String message = String("Requested to move volt meter to: ") + String(dest);
@@ -111,6 +119,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
          } else {
             String message = String("Out of range: ") + String(dest);
             publishString(message);
+                           
+            setMeterTo(voltMeterPin, fsds.getValueOf(voltMeterPin));
           }         
       }
       
