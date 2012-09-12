@@ -64,6 +64,14 @@ void setup() {
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
   
+  digitalWrite(greenPin, HIGH);
+   delay(1000);
+   digitalWrite(greenPin, LOW);
+   
+   digitalWrite(redPin, HIGH);
+   delay(1000);
+   digitalWrite(redPin, LOW);
+   
   // Start serial and Ethernet comms
   Serial.begin(9600);
     
@@ -84,17 +92,19 @@ void setup() {
       Serial.println("Connected");
       client.publish("gauges","arduino connected");
       client.subscribe("zabbix");
+      
+     digitalWrite(greenPin, HIGH);
+     digitalWrite(redPin, HIGH);
+     delay(1000);
+
+     digitalWrite(redPin, LOW);
+     digitalWrite(greenPin, LOW);
+      
+      
   } else {
       Serial.println("Failed to connect");
   }
   
-   digitalWrite(greenPin, HIGH);
-   delay(1000);
-   digitalWrite(greenPin, LOW);
-   
-   digitalWrite(redPin, HIGH);
-   delay(1000);
-   digitalWrite(redPin, LOW);
 }
 
 void loop()  {
