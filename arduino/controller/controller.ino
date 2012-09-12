@@ -16,6 +16,8 @@ byte server[] = { 192, 168, 1, 10 };
 // PWM doesn't seeem to be available on pin 4 ethier.
 int ampMeterPin = 3;
 int voltMeterPin = 5;
+int greenPin = 7;
+int redPin = 6;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
@@ -52,9 +54,11 @@ void setup() {
   positions[0](ampMeterPin, 0);
   positions[1](voltMeterPin, 0);
   
-  // Power up meter pins
+  // Power up pins
   pinMode(ampMeterPin, OUTPUT);
-  pinMode(voltMeterPin, OUTPUT);
+  pinMode(voltMeterPin, OUTPUT);  
+  pinMode(greenPin, OUTPUT);
+  pinMode(redPin, OUTPUT);
   
   // Onboard LED pin used to signal activity only
   pinMode(13, OUTPUT);
@@ -83,6 +87,14 @@ void setup() {
   } else {
       Serial.println("Failed to connect");
   }
+  
+   digitalWrite(greenPin, HIGH);
+   delay(1000);
+   digitalWrite(greenPin, LOW);
+   
+   digitalWrite(redPin, HIGH);
+   delay(1000);
+   digitalWrite(redPin, LOW);
 }
 
 void loop()  {
@@ -121,9 +133,19 @@ void callback(char* topic, byte* payload, unsigned int length) {
             publishString(message);
                            
             setMeterTo(voltMeterPin, fsds.getValueOf(voltMeterPin));
-          }         
-      }
-      
+         }         
+    }
+    
+    if(payLoadString.startsWith("ok")) {
+          digitalWrite(greenPin, HIGH);
+          digitalWrite(redPin, LOW);
+    }
+    
+    if(payLoadString.startsWith("problem")) {
+          digitalWrite(greenPin, LOW);
+          digitalWrite(redPin, HIGH);
+    } 
+           
   }
   
 }
