@@ -229,7 +229,7 @@ License: GPLv2
             
         try:
             for key,val in data.items():
-                tempfile.write("%s %s %s apache[%s,%s] %s\n"%(opts.zabbixserver,'marlow',opts.zabbixport,'localhost', key,val))
+                tempfile.write("%s apache[%s,%s] %s\n"%(opts.senderloc,'localhost',key,val))
             tempfile.close()
         except "bogus":
             parser.error("Error creating the file to send")
@@ -244,4 +244,4 @@ License: GPLv2
             tempfile.close()
         except:
             pass
-        os.remove(tempfilepath)
+       	os.remove(tempfilepath)
