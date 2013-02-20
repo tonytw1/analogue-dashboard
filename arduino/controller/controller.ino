@@ -8,8 +8,6 @@
 #include <PubSubClient.h>
 
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-byte ip[] = { 192, 168, 1, 30 };
-byte server[] = { 192, 168, 1, 10 };
 
 // Pins which devices are attached to.
 // The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
@@ -37,9 +35,26 @@ HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 int panDelay = 100;
 
 EthernetClient ethClient;
+byte server[] = { 192, 168, 1, 10 };
 PubSubClient client(server, 1883, callback, ethClient);
 
-void setup() {  
+void setup() {
+   Serial.begin(9600);
+   // start the Ethernet connection:
+   if (Ethernet.begin(mac) == 0) {
+      // failed to dhcp no point in carrying on, so do nothing forevermore:
+      Serial.println("Failed to configure Ethernet using DHCP");
+      for(;;)
+      ;
+  }
+  Serial.print("My IP address: ");
+  for (byte thisByte = 0; thisByte < 4; thisByte++) {
+    // print the value of each byte of the IP address:
+    Serial.print(Ethernet.localIP()[thisByte], DEC);
+    Serial.print("."); 
+  }
+  Serial.println();
+  
   // PWM voltage corresponding to zero and FSD for meters
   zeroedPinouts[0](ampMeterPin, 0);
   zeroedPinouts[1](voltMeterPin, 0);
@@ -66,16 +81,13 @@ void setup() {
   digitalWrite(13, LOW);
   
   digitalWrite(greenPin, HIGH);
-   delay(1000);
-   digitalWrite(greenPin, LOW);
+  delay(1000);
+  digitalWrite(greenPin, LOW);
    
-   digitalWrite(redPin, HIGH);
-   delay(1000);
-   digitalWrite(redPin, LOW);
-   
-  // Start serial and Ethernet comms
-  Serial.begin(9600);
-    
+  digitalWrite(redPin, HIGH);
+  delay(1000);
+  digitalWrite(redPin, LOW);
+       
   Serial.println("Starting up");
   
   //setMeterTo(ampMeterPin, 10);
@@ -85,9 +97,7 @@ void setup() {
   setMeterTo(ampMeterPin, 0);
   setMeterTo(voltMeterPin, 0);
   //delay(2000);
-  
-  Ethernet.begin(mac, ip);
-    
+      
   Serial.println("Subscribing");
   if (client.connect("zabbix")) {
       Serial.println("Connected");
@@ -99,9 +109,8 @@ void setup() {
      delay(1000);
 
      digitalWrite(redPin, LOW);
-     digitalWrite(greenPin, LOW);
-      
-      
+     digitalWrite(greenPin, LOW); 
+     
   } else {
       Serial.println("Failed to connect");
   }
