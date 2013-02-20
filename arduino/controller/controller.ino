@@ -36,7 +36,8 @@ HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
 int panDelay = 100;
 
-PubSubClient client(server, 1883, callback);
+EthernetClient ethClient;
+PubSubClient client(server, 1883, callback, ethClient);
 
 void setup() {  
   // PWM voltage corresponding to zero and FSD for meters
