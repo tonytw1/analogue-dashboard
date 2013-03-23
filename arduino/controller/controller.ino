@@ -16,6 +16,7 @@ int ampMeterPin = 3;
 int voltMeterPin = 5;
 int greenPin = 7;
 int redPin = 6;
+int led = 13;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
@@ -39,21 +40,23 @@ byte server[] = { 192, 168, 1, 10 };
 PubSubClient client(server, 1883, callback, ethClient);
 
 void setup() {
+   pinMode(led, OUTPUT);
+   digitalWrite(led, LOW);
+
    Serial.begin(9600);
+   
    // start the Ethernet connection:
    if (Ethernet.begin(mac) == 0) {
       // failed to dhcp no point in carrying on, so do nothing forevermore:
-      Serial.println("Failed to configure Ethernet using DHCP");
       for(;;)
       ;
   }
-  Serial.print("My IP address: ");
+  
+  digitalWrite(led, HIGH);
+  
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
     // print the value of each byte of the IP address:
-    Serial.print(Ethernet.localIP()[thisByte], DEC);
-    Serial.print("."); 
   }
-  Serial.println();
   
   // PWM voltage corresponding to zero and FSD for meters
   zeroedPinouts[0](ampMeterPin, 0);
@@ -87,8 +90,6 @@ void setup() {
   digitalWrite(redPin, HIGH);
   delay(1000);
   digitalWrite(redPin, LOW);
-       
-  Serial.println("Starting up");
   
   //setMeterTo(ampMeterPin, 10);
   //setMeterTo(voltMeterPin, 10);
@@ -98,9 +99,7 @@ void setup() {
   setMeterTo(voltMeterPin, 0);
   //delay(2000);
       
-  Serial.println("Subscribing");
   if (client.connect("zabbix")) {
-      Serial.println("Connected");
       client.publish("gauges","arduino connected");
       client.subscribe("zabbix");
       
@@ -112,7 +111,6 @@ void setup() {
      digitalWrite(greenPin, LOW); 
      
   } else {
-      Serial.println("Failed to connect");
   }
   
 }
@@ -164,8 +162,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if(payLoadString.startsWith("problem")) {
           digitalWrite(greenPin, LOW);
           digitalWrite(redPin, HIGH);
-    } 
-           
+    }
+    
+    if(payLoadString.startsWith("count")) {
+        String valueString = payLoadString.substring(6, payLoadString.length());
+        Serial.println(valueString);
+    }
+    
   }
   
 }
