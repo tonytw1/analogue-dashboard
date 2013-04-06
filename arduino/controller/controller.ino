@@ -155,12 +155,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     
     if(payLoadString.startsWith("ok")) {
+          digitalWrite(redPin, LOW);          
+          digitalWrite(greenPin, LOW);
+          delay(1000);   
           digitalWrite(greenPin, HIGH);
-          digitalWrite(redPin, LOW);
+         
     }
     
     if(payLoadString.startsWith("problem")) {
           digitalWrite(greenPin, LOW);
+          digitalWrite(redPin, LOW);
+          delay(1000);
           digitalWrite(redPin, HIGH);
     }
     
