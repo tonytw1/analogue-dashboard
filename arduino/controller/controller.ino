@@ -14,9 +14,19 @@ byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 // PWM doesn't seeem to be available on pin 4 ethier.
 int ampMeterPin = 3;
 int voltMeterPin = 5;
-int greenPin = 7;
+int greenPin = 9;
 int redPin = 6;
 int led = 13;
+
+int greenBrightness = 0;
+unsigned long greenNextStep = 0;
+int ampMeterNextStep = 0;
+unsigned long voltMeterNextStep = 0;
+
+int redBrightness = 0;
+unsigned long redNextStep = 0;
+int ampMeterTarget = 0;
+int voltMeterTarget = 0;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
@@ -116,7 +126,32 @@ void setup() {
 }
 
 void loop()  {
-  client.loop();
+   client.loop();
+    
+   if (millis() > greenNextStep) {
+      greenNextStep = millis() + 10;       
+      if (greenBrightness > 30 ) {
+         greenBrightness = greenBrightness -1;
+      }
+      analogWrite(greenPin, greenBrightness);
+   }
+   
+   if (millis() > redNextStep) {
+     redNextStep = millis() + 10;       
+     if (redBrightness > 30 ) {
+        redBrightness = redBrightness -1;
+     }
+     analogWrite(redPin, redBrightness);
+   }
+   
+   if (millis() > voltMeterNextStep) {
+     voltMeterNextStep = millis() + 100;       
+     panMeterFromTo(voltMeterPin, voltMeterTarget);
+   }
+   
+   digitalWrite(13, HIGH);  
+   digitalWrite(13, LOW);
+
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -140,42 +175,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
          String message = String("Requested to move volt meter to: ") + String(dest);
          publishString(message);
          
-         if (dest >= 0 && dest <= fsds.getValueOf(voltMeterPin)) {
+         if (dest >= 0 && dest <= fsds.getValueOf(voltMeterPin)) {  // TODO maybe not in the correct place - setMeterTo?
            String message = String("Moving volt meter to: ") + String(dest);
-           publishString(message);
-           
-           setMeterTo(voltMeterPin, dest);
+           publishString(message);           
+           voltMeterTarget = setMeterTo(voltMeterPin, dest);
            
          } else {
             String message = String("Out of range: ") + String(dest);
-            publishString(message);
-                           
-            setMeterTo(voltMeterPin, fsds.getValueOf(voltMeterPin));
+            publishString(message);                           
+            voltMeterTarget = setMeterTo(voltMeterPin, fsds.getValueOf(voltMeterPin));
          }         
     }
     
     if(payLoadString.startsWith("ok")) {
-          digitalWrite(redPin, LOW);          
-          digitalWrite(greenPin, LOW);
-          delay(1000);   
-          digitalWrite(greenPin, HIGH);
-         
+       greenBrightness = 255;
+       redBrightness = 0;
     }
     
     if(payLoadString.startsWith("problem")) {
-          digitalWrite(greenPin, LOW);
-          digitalWrite(redPin, LOW);
-          delay(1000);
-          digitalWrite(redPin, HIGH);
-    }
-    
-    if(payLoadString.startsWith("count")) {
-        String valueString = payLoadString.substring(6, payLoadString.length());
-        Serial.println(valueString);
+          greenBrightness = 0;
+          redBrightness = 255;
     }
     
   }
-  
+    
 }
 
 // Calculate the correct PWM voltage required to move the a meter needle to the desired position
@@ -189,43 +212,32 @@ int setMeterTo(int pin, int dest) {
   int fsdPWMValue = fsdPinouts.getValueOf(pin);
   
   int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
-  if (offset >= zeroedPWMValue && offset <= fsdPWMValue) {
-    int currentMeterPosition = positions.getValueOf(pin);
-    panMeterFromTo(pin, offset);
-  }
+  message = "PWM offset is: " + String(offset, DEC);
+  publishString(message);
   return offset;
 }
 
 
-// Move the needle in an orderly fashion to avoid recoil.
-// The needle has a fair amount of momentum and we don't want to damage the spring with sudden stops.
-// Adding alot of capacitance across the meter would also be a good thing todo (say > 200mF)
-void panMeterFromTo(int pin, int offset) {
-    String message = "Panning meter " + String(pin, DEC) + " to PWM: " + String(offset, DEC);
-    publishString(message);
-    
+void panMeterFromTo(int pin, int offset) { 
     int currentPosition = positions.getValueOf(pin);
-    
-    while (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
-      String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
-      publishString(message);
+    if (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
+      //String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
+      //publishString(message);
        
       currentPosition = currentPosition + 1;
       analogWrite(pin, currentPosition);
-      delay(panDelay);
-     }
+      recordPosition(pin, currentPosition);
+      return;
+    }
    
-     while (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {       
-        String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
-        publishString(message);
-        currentPosition = currentPosition - 1;     
-        analogWrite(pin, currentPosition);
-        delay(panDelay);
-   }
-   
-   publishString(String("Finished panning"));
-   recordPosition(pin, currentPosition);
-   return;
+    if (currentPosition > offset && offset >=  zeroedPinouts.getValueOf(pin)) {       
+      //String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
+      //publishString(message);
+      currentPosition = currentPosition - 1;     
+      analogWrite(pin, currentPosition);
+      recordPosition(pin, currentPosition);
+      return;
+   } 
 }
 
 void recordPosition(int pin, int position) {
