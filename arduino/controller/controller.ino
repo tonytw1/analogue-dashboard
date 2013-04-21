@@ -71,18 +71,26 @@ void setup() {
   // PWM voltage corresponding to zero and FSD for meters
   zeroedPinouts[0](ampMeterPin, 0);
   zeroedPinouts[1](voltMeterPin, 0);
-  
+  zeroedPinouts[2](greenPin, 0);
+  zeroedPinouts[3](redPin, 0);
+
   fsdPinouts[0](ampMeterPin, 250);
   fsdPinouts[1](voltMeterPin, 253);
-  
+  fsdPinouts[2](greenPin, 255);
+  fsdPinouts[3](redPin, 255);
+
   // The full scale deflection value on the face of the amp meter
   fsds[0](ampMeterPin, 100);
   fsds[1](voltMeterPin, 80);
+  fsds[2](greenPin, 255);
+  fsds[3](redPin, 255);
   
   // All devices are initially zeroed  TODO - need to be able to define rest locations for all - ie. gauges should reset in center - 0 could be of scale 
   positions[0](ampMeterPin, 0);
   positions[1](voltMeterPin, 0);
-  
+  positions[2](greenPin, 0);
+  positions[3](redPin, 0);
+
   // Power up pins
   pinMode(ampMeterPin, OUTPUT);
   pinMode(voltMeterPin, OUTPUT);  
@@ -101,14 +109,7 @@ void setup() {
   delay(1000);
   digitalWrite(redPin, LOW);
   
-  //setMeterTo(ampMeterPin, 10);
-  //setMeterTo(voltMeterPin, 10);
-  //delay(2000);
  
-  setMeterTo(ampMeterPin, 0);
-  setMeterTo(voltMeterPin, 0);
-  //delay(2000);
-      
   if (client.connect("zabbix")) {
       client.publish("gauges","arduino connected");
       client.subscribe("zabbix");
@@ -118,34 +119,30 @@ void setup() {
      delay(1000);
 
      digitalWrite(redPin, LOW);
-     digitalWrite(greenPin, LOW); 
-     
-  } else {
+     digitalWrite(greenPin, LOW);    
   }
   
+  setMeterTo(ampMeterPin, 0);
+  setMeterTo(voltMeterPin, 0);
+  setMeterTo(greenPin, 0);
+  setMeterTo(redPin, 0);  
 }
 
 void loop()  {
    client.loop();
     
    if (millis() > greenNextStep) {
-      greenNextStep = millis() + 10;       
-      if (greenBrightness > 30 ) {
-         greenBrightness = greenBrightness -1;
-      }
-      analogWrite(greenPin, greenBrightness);
+      greenNextStep = millis() + 5;            
+      panMeterFromTo(greenPin, greenBrightness);
    }
    
    if (millis() > redNextStep) {
-     redNextStep = millis() + 10;       
-     if (redBrightness > 30 ) {
-        redBrightness = redBrightness -1;
-     }
-     analogWrite(redPin, redBrightness);
+      redNextStep = millis() + 5;       
+      panMeterFromTo(redPin, redBrightness);
    }
    
    if (millis() > voltMeterNextStep) {
-     voltMeterNextStep = millis() + 100;       
+     voltMeterNextStep = millis() + 20;       
      panMeterFromTo(voltMeterPin, voltMeterTarget);
    }
    
@@ -193,8 +190,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     
     if(payLoadString.startsWith("problem")) {
-          greenBrightness = 0;
-          redBrightness = 255;
+       greenBrightness = 0;
+       redBrightness = 255;
     }
     
   }
@@ -221,7 +218,7 @@ int setMeterTo(int pin, int dest) {
 void panMeterFromTo(int pin, int offset) { 
     int currentPosition = positions.getValueOf(pin);
     if (currentPosition < offset && offset <= fsdPinouts.getValueOf(pin)) {
-      //String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
+       //String message = "Panning meter " + String(pin, DEC) + " from " + String(currentPosition, DEC) + " to " + String(offset, DEC);
       //publishString(message);
        
       currentPosition = currentPosition + 1;
