@@ -9,14 +9,21 @@
 
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
+byte BCD[16][4] ={{0,0,0,0},{1,0,0,0},{0,1,0,0},{1,1,0,0},
+{0,0,1,0},{1,0,1,0},{0,1,1,0},{1,1,1,0},{0,0,0,1},{1,0,0,1},
+{0,1,0,1},{1,1,0,1},{0,0,1,1},{1,0,1,1},{0,1,1,1},{1,1,1,1}};
+
+
 // Pins which devices are attached to.
 // The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
 // PWM doesn't seeem to be available on pin 4 ethier.
-int ampMeterPin = 3;
-int voltMeterPin = 5;
-int greenPin = 9;
-int redPin = 6;
-int led = 13;
+
+int bcdOutputs[4] = {9, 8, 7, 6}; // A,B,C,D inputs Display 1
+
+int redPin = 2;
+int greenPin = 1;
+int voltMeterPin = 0;
+int ampMeterPin = 0;  // TODO
 
 int greenBrightness = 0;
 unsigned long greenNextStep = 0;
@@ -27,6 +34,7 @@ int redBrightness = 0;
 unsigned long redNextStep = 0;
 int ampMeterTarget = 0;
 int voltMeterTarget = 0;
+int count = 0;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
@@ -50,20 +58,27 @@ byte server[] = { 192, 168, 1, 10 };
 PubSubClient client(server, 1883, callback, ethClient);
 
 void setup() {
-   pinMode(led, OUTPUT);
-   digitalWrite(led, LOW);
-
    Serial.begin(9600);
    
+    pinMode(greenPin, OUTPUT);    
+    pinMode(redPin, OUTPUT);     
+    
+    pinMode(5, OUTPUT);    
+    pinMode(4, OUTPUT);     
+    pinMode(3, OUTPUT);     
+    
+    pinMode(9, OUTPUT);    
+    pinMode(8, OUTPUT);     
+    pinMode(7, OUTPUT);     
+    pinMode(6, OUTPUT);
+    
    // start the Ethernet connection:
    if (Ethernet.begin(mac) == 0) {
       // failed to dhcp no point in carrying on, so do nothing forevermore:
       for(;;)
       ;
   }
-  
-  digitalWrite(led, HIGH);
-  
+    
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
     // print the value of each byte of the IP address:
   }
@@ -96,11 +111,7 @@ void setup() {
   pinMode(voltMeterPin, OUTPUT);  
   pinMode(greenPin, OUTPUT);
   pinMode(redPin, OUTPUT);
-  
-  // Onboard LED pin used to signal activity only
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
-  
+    
   digitalWrite(greenPin, HIGH);
   delay(1000);
   digitalWrite(greenPin, LOW);
@@ -146,9 +157,37 @@ void loop()  {
      panMeterFromTo(voltMeterPin, voltMeterTarget);
    }
    
-   digitalWrite(13, HIGH);  
-   digitalWrite(13, LOW);
-
+   boolean leadingBlank = true;
+     for (int j = 5; j >= 3; j--) {
+       
+        int num = count%10;
+        if (j == 4) {
+            num = (count/10%10);
+        }
+        if (j == 5) {
+            num = (count/100%10);
+        }
+                
+        digitalWrite(5, LOW);
+        digitalWrite(4, LOW);
+        digitalWrite(3, LOW);
+     
+        if(num > 0 || j == 3) {
+          leadingBlank = false;
+        } 
+                
+        for(int c = 0; c < 4; c++) {
+            digitalWrite(bcdOutputs[c], BCD[num][c]);
+        }
+        
+        if (leadingBlank == false) {
+         digitalWrite(j, HIGH); 
+        }
+        
+        delay(2);
+        digitalWrite(j, LOW); 
+    }
+    
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -194,6 +233,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
        redBrightness = 255;
     }
     
+    if(payLoadString.startsWith("count")) {
+         String valueString = payLoadString.substring(6, payLoadString.length());
+         int dest = stringToInt(valueString);
+         
+         String message = String("Count: ") + String(dest);
+         publishString(message);
+         count = dest; 
+    }    
   }
     
 }
