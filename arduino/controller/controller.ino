@@ -9,19 +9,12 @@
 
 byte mac[] = {  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-byte BCD[16][4] ={{0,0,0,0},{1,0,0,0},{0,1,0,0},{1,1,0,0},
-{0,0,1,0},{1,0,1,0},{0,1,1,0},{1,1,1,0},{0,0,0,1},{1,0,0,1},
-{0,1,0,1},{1,1,0,1},{0,0,1,1},{1,0,1,1},{0,1,1,1},{1,1,1,1}};
-
-
 // Pins which devices are attached to.
 // The servo driver and Ethernet shield tend to disable PWM pins 9 and above.
-// PWM doesn't seeem to be available on pin 4 ethier.
+// PWM doesn't seem to be available on pin 4 ethier.
 
-int bcdOutputs[4] = {9, 8, 7, 6}; // A,B,C,D inputs Display 1
-
-int redPin = 2;
-int greenPin = 1;
+int redPin = 9;
+int greenPin = 3;
 int voltMeterPin = 0;
 int ampMeterPin = 0;  // TODO
 
@@ -51,8 +44,6 @@ HashMap<int,int> zeroedPinouts = HashMap<int,int>(zeroedPinoutsArray, HASH_SIZE 
 HashType<int,int> fsdPinoutsArray[HASH_SIZE];
 HashMap<int,int> fsdPinouts = HashMap<int,int>(fsdPinoutsArray, HASH_SIZE );
 
-int panDelay = 100;
-
 EthernetClient ethClient;
 byte server[] = { 192, 168, 1, 10 };
 PubSubClient client(server, 1883, callback, ethClient);
@@ -81,7 +72,7 @@ void setup() {
     
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
     // print the value of each byte of the IP address:
-  }
+   }
   
   // PWM voltage corresponding to zero and FSD for meters
   zeroedPinouts[0](ampMeterPin, 0);
@@ -156,36 +147,26 @@ void loop()  {
      voltMeterNextStep = millis() + 20;       
      panMeterFromTo(voltMeterPin, voltMeterTarget);
    }
-   
-   boolean leadingBlank = true;
-     for (int j = 5; j >= 3; j--) {
-       
+           
+   for (int i = 0; i <= 3; i++) {     
         int num = count%10;
-        if (j == 4) {
+        if (i == 1) {
             num = (count/10%10);
         }
-        if (j == 5) {
+        if (i == 2) {
             num = (count/100%10);
         }
+        if (i == 3) {
+            num = (count/1000%10);
+        }
                 
+        byte digit = num << 4;
+        bitSet(digit, i);
+                           
         digitalWrite(5, LOW);
-        digitalWrite(4, LOW);
-        digitalWrite(3, LOW);
-     
-        if(num > 0 || j == 3) {
-          leadingBlank = false;
-        } 
-                
-        for(int c = 0; c < 4; c++) {
-            digitalWrite(bcdOutputs[c], BCD[num][c]);
-        }
-        
-        if (leadingBlank == false) {
-         digitalWrite(j, HIGH); 
-        }
-        
-        delay(2);
-        digitalWrite(j, LOW); 
+        shiftOut(7, 6, LSBFIRST, digit);
+        digitalWrite(5, HIGH);
+        delay(1);         
     }
     
 }
