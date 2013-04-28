@@ -22,12 +22,14 @@ int greenBrightness = 0;
 unsigned long greenNextStep = 0;
 int ampMeterNextStep = 0;
 unsigned long voltMeterNextStep = 0;
+unsigned long countNextStep = 0;
 
 int redBrightness = 0;
 unsigned long redNextStep = 0;
 int ampMeterTarget = 0;
 int voltMeterTarget = 0;
 int count = 0;
+int countTarget = 0;
 
 // Remember the current positions on each device
 const byte HASH_SIZE = 5; 
@@ -147,7 +149,17 @@ void loop()  {
      voltMeterNextStep = millis() + 20;       
      panMeterFromTo(voltMeterPin, voltMeterTarget);
    }
-           
+   
+    if (millis() > countNextStep) {
+     countNextStep = millis() + 50;       
+     if (count < countTarget) {
+       count++;
+     }
+     if (count > countTarget) {
+        count--; 
+     }     
+   }
+              
    for (int i = 0; i <= 3; i++) {     
         int num = count%10;
         if (i == 1) {
@@ -201,7 +213,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
             String message = String("Out of range: ") + String(dest);
             publishString(message);                           
             voltMeterTarget = setMeterTo(voltMeterPin, fsds.getValueOf(voltMeterPin));
-         }         
+         }
     }
     
     if(payLoadString.startsWith("ok")) {
@@ -216,12 +228,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
     
     if(payLoadString.startsWith("count")) {
          String valueString = payLoadString.substring(6, payLoadString.length());
-         int dest = stringToInt(valueString);
-         
-         String message = String("Count: ") + String(dest);
-         publishString(message);
-         count = dest; 
-    }    
+         int dest = stringToInt(valueString);         
+         countTarget = dest; 
+    }
   }
     
 }
