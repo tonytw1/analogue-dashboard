@@ -159,8 +159,9 @@ void loop()  {
         count--; 
      }     
    }
-              
-   for (int i = 0; i <= 3; i++) {     
+    
+   boolean leadingBlank = true;           
+   for (int i = 3; i >= 0; i--) {     
         int num = count%10;
         if (i == 1) {
             num = (count/10%10);
@@ -171,10 +172,16 @@ void loop()  {
         if (i == 3) {
             num = (count/1000%10);
         }
+        
+        if (num > 0 || i == 0) {
+           leadingBlank = false; 
+        }
                 
         byte digit = num << 4;
-        bitSet(digit, i);
-                           
+        if (!leadingBlank) {
+          bitSet(digit, i);
+        }
+        
         digitalWrite(5, LOW);
         shiftOut(7, 6, LSBFIRST, digit);
         digitalWrite(5, HIGH);
