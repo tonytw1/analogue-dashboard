@@ -150,14 +150,23 @@ void loop()  {
      panMeterFromTo(voltMeterPin, voltMeterTarget);
    }
    
-    if (millis() > countNextStep) {
-     countNextStep = millis() + 50;       
+   if (millis() > countNextStep) {
+     int countDelay = 100;
+      
+     
      if (count < countTarget) {
+              countDelay = 2000 / (countTarget - count);
+
        count++;
+       
      }
      if (count > countTarget) {
+              countDelay = 2000 / (count - countTarget);
+
         count--; 
-     }     
+     }
+
+     countNextStep = millis() + countDelay;           
    }
     
    boolean leadingBlank = true;           
