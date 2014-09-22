@@ -8,12 +8,12 @@ byte mac[] = {
 
 EthernetClient ethClient;
 byte server[] = { 
-  192, 168, 1, 10 };
+  192, 168, 1, 90 };
 PubSubClient client(server, 1883, callback, ethClient);
 
 const byte NUMBER_OF_DEVICES = 6; 
 
-char* devices[] = {"voltmeter1", "ammeter1", "master-green", "master-red", "secondary-green", "secondary-red"}; 
+char* devices[] = {"voltmeter1", "ammeter1", "master-d", "master-c", "master-b", "master-a"}; 
 char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator", "indicator", "indicator"};
 int scales[] = {80, 100, 100, 100, 100, 100};
 int pwmMax[] = {232, 250, 255, 255, 255, 255};
