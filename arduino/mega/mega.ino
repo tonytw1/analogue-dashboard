@@ -11,19 +11,19 @@ byte server[] = {
   192, 168, 1, 10 };
 PubSubClient client(server, 1883, callback, ethClient);
 
-const byte NUMBER_OF_DEVICES = 4; 
+const byte NUMBER_OF_DEVICES = 6; 
 
-char* devices[] = {"voltmeter1", "ammeter1", "master-green", "master-red"};
-char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator"};
-int scales[] = {80, 100, 100, 100};
-int pwmMax[] = {232, 250, 255, 255};
+char* devices[] = {"voltmeter1", "ammeter1", "master-green", "master-red", "secondary-green", "secondary-red"}; 
+char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator", "indicator", "indicator"};
+int scales[] = {80, 100, 100, 100, 100, 100};
+int pwmMax[] = {232, 250, 255, 255, 255, 255};
 
-int panDelays[] = {50, 100, 20, 20};
+int panDelays[] = {50, 100, 20, 20, 20, 20};
 
-int present[] = {0, 0, 0, 0};
-int destinations[] = {0, 0, 0, 0};
-unsigned long nextSteps[] = {0, 0, 0, 0};
-int pins[] = {8, 9, 7, 6};
+int present[] = {0, 0, 0, 0, 0, 0};
+int destinations[] = {0, 0, 0, 0, 0, 0};
+unsigned long nextSteps[] = {0, 0, 0, 0, 0, 0};
+int pins[] = {8, 9, 7, 6, 5, 4};
 
 unsigned long nextAdvertisement = 0;
 
