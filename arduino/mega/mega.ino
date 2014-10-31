@@ -11,24 +11,23 @@ byte server[] = {
   192, 168, 1, 90 };
 PubSubClient client(server, 1883, callback, ethClient);
 
-const byte NUMBER_OF_DEVICES = 6; 
+const byte NUMBER_OF_DEVICES = 7; 
 
-char* devices[] = {"voltmeter1", "ammeter1", "master-d", "master-c", "master-b", "master-a"}; 
-char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator", "indicator", "indicator"};
-int scales[] = {80, 100, 100, 100, 100, 100};
-int pwmMax[] = {232, 250, 255, 255, 255, 255};
+char* devices[] = {"voltmeter1", "ammeter1", "master-d", "master-c", "master-b", "master-a", "linear-a"}; 
+char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator", "indicator", "indicator", "gauge"};
+int scales[] = {80, 100, 100, 100, 100, 100, 1000};
+int pwmMax[] = {232, 250, 255, 255, 255, 255, 255};
 
-int panDelays[] = {50, 100, 20, 20, 20, 20};
+int panDelays[] = {50, 100, 20, 20, 20, 20, 20};
 
-int present[] = {0, 0, 0, 0, 0, 0};
-int destinations[] = {0, 0, 0, 0, 0, 0};
-unsigned long nextSteps[] = {0, 0, 0, 0, 0, 0};
-int pins[] = {8, 9, 7, 6, 5, 4};
+int present[] = {0, 0, 0, 0, 0, 0, 0};
+int destinations[] = {0, 0, 0, 0, 0, 0, 0};
+unsigned long nextSteps[] = {0, 0, 0, 0, 0, 0, 0};
+int pins[] = {4, 5, 0, 1, 2, 3, 6};
 
 unsigned long nextAdvertisement = 0;
 
 void setup() {
-  Serial.begin(9600);
 
   for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
     if (pins[i] > 0) {
@@ -115,13 +114,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     message_buff[i] = '\0';
 
     String payLoadString = String(message_buff);   
-    Serial.println("Received message: " + payLoadString);
 
     for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
       String deviceName = devices[i];
       if(payLoadString.startsWith(deviceName)) {
         String valueString = payLoadString.substring(deviceName.length() + 1, payLoadString.length());
-        Serial.println("Message is a value for device: " + deviceName + ": " + valueString);
         
         if (deviceTypes[i] == "gauge") {
           float value = stringToFloat(valueString);
