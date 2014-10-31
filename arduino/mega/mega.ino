@@ -14,11 +14,11 @@ PubSubClient client(server, 1883, callback, ethClient);
 const byte NUMBER_OF_DEVICES = 7; 
 
 char* devices[] = {"voltmeter1", "ammeter1", "master-d", "master-c", "master-b", "master-a", "linear-a"}; 
-char* deviceTypes[]= {"gauge", "gauge", "indicator", "indicator", "indicator", "indicator", "gauge"};
+char* deviceTypes[]= {"gauge", "gauge", "lamp", "lamp", "indicator", "indicator", "gauge"};
 int scales[] = {80, 100, 100, 100, 100, 100, 1000};
 int pwmMax[] = {232, 250, 255, 255, 255, 255, 255};
 
-int panDelays[] = {50, 100, 20, 20, 20, 20, 20};
+int panDelays[] = {50, 100, 0, 0, 20, 20, 20};
 
 int present[] = {0, 0, 0, 0, 0, 0, 0};
 int destinations[] = {0, 0, 0, 0, 0, 0, 0};
@@ -30,10 +30,14 @@ unsigned long nextAdvertisement = 0;
 void setup() {
 
   for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
-    if (pins[i] > 0) {
+    
       pinMode(pins[i], OUTPUT);
-      analogWrite(pins[i], 0);       
-    }
+      if (deviceTypes[i] == "lamp") {
+            digitalWrite(pins[i], LOW);   
+      } else {
+           analogWrite(pins[i], 0);   
+      }
+         
   }
 
   // start the Ethernet connection:
@@ -119,6 +123,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
       String deviceName = devices[i];
       if(payLoadString.startsWith(deviceName)) {
         String valueString = payLoadString.substring(deviceName.length() + 1, payLoadString.length());
+        
+        if (deviceTypes[i] == "lamp") {
+           if (valueString == "true") {
+             digitalWrite(pins[i], HIGH);
+           } else {
+             digitalWrite(pins[i], LOW);  
+           }
+        }
         
         if (deviceTypes[i] == "gauge") {
           float value = stringToFloat(valueString);
