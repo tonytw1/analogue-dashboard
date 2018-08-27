@@ -1,0 +1,11 @@
+[Unit]
+Description=Serial MQTT bridge
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/node/serial-mqtt-bridge.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
