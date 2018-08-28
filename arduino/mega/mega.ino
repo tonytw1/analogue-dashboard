@@ -1,175 +1,141 @@
-#include <PubSubClient.h>
-#include <SPI.h>
-#include <HashMap.h>
-#include "Ethernet.h"
+unsigned int announcementInterval = 10000;
+unsigned long updateTTL = 90000;
 
-byte mac[] = {  
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+unsigned long nextAnnouncement = 0;
 
-EthernetClient ethClient;
-byte server[] = { 
-  192, 168, 1, 90 };
-PubSubClient client(server, 1883, callback, ethClient);
+String inputString = "";     // a string to hold incoming data
+boolean stringComplete = false;  // whether the string is complete
 
-const byte NUMBER_OF_DEVICES = 8; 
+unsigned int lampPins[] = {8, 9, 10, 11, 6, 7};
+String lampNames[] = {"green", "red", "green2", "red2", "amps", "volts"};
+unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0};
+unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100};
+unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80};
 
-char* devices[] = {"voltmeter1", "ammeter1", "master-d", "master-c", "master-b", "master-a", "linear-a", "linear-b"}; 
-char* deviceTypes[]= {"gauge", "gauge", "lamp", "lamp", "indicator", "indicator", "gauge", "gauge"};
-int scales[] = {80, 100, 100, 100, 100, 100, 1000, 1000};
-int pwmMax[] = {232, 250, 255, 255, 255, 255, 255, 250};
-
-int panDelays[] = {50, 100, 0, 0, 20, 20, 20};
-
-int present[] = {0, 0, 0, 0, 0, 0, 0, 0};
-int destinations[] = {0, 0, 0, 0, 0, 0, 0, 0};
-unsigned long nextSteps[] = {0, 0, 0, 0, 0, 0, 0, 0};
-int pins[] = {4, 5, 0, 1, 2, 3, 6, 7};
-
-unsigned long nextAdvertisement = 0;
+int lampTargets[] = {0, 0, 0, 0, 0, 0};
+int lampValues[] = {0, 0, 0, 0, 0, 0};
+long lampLastUpdated[] = {0, 0, 0, 0, 0, 0};
 
 void setup() {
-
-  for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
-    
-      pinMode(pins[i], OUTPUT);
-      if (deviceTypes[i] == "lamp") {
-            digitalWrite(pins[i], LOW);   
-      } else {
-           analogWrite(pins[i], 0);   
-      }
-         
+  inputString.reserve(200);
+  Serial.begin(115200);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
   }
-
-  // start the Ethernet connection:
-  if (Ethernet.begin(mac) == 0) {
-    // failed to dhcp no point in carrying on, so do nothing forevermore:
-    for(;;)
-      ;
-  }
-
-  if (client.connect("gauges")) {
-    client.publish("gauges","Gauges connected");
-    client.subscribe("gauges");         
-  }
-
-}
-
-void advertiseDevices() {  
-  for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
-    char buf[50];
-    char* scale = itoa(scales[i], buf, 10);
-
-    String description = String(devices[i]);
-    description = "gauge:" + description + "," + deviceTypes[i] + "," + scale;
-
-    description.toCharArray(buf, 50);
-    client.publish("gauges", buf);
+  int i;
+  int numberOfElements = sizeof(lampPins) / sizeof(lampPins[0]);
+  for (i = 0; i < numberOfElements; i = i + 1) {
+    int lampPin = lampPins[i];
+    pinMode(lampPin, OUTPUT);
+    digitalWrite(lampPin, LOW);
   }
 }
 
 void loop() {
-  client.loop();
-
-  if (millis() > nextAdvertisement) {
-    advertiseDevices();
-    nextAdvertisement = millis() + 60000; 
+  if (stringComplete) {
+    processInput();
   }
 
-  for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
-    // TODO if gauges and counters only
-        
-    if (millis() > nextSteps[i]) {
-
-       if (deviceTypes[i] == "gauge" || deviceTypes[i] == "indicator") {
-          if (present[i] < destinations[i]) {         
-            int nextStep = present[i] + 1;
-            present[i] = nextStep;
-            analogWrite(pins[i], nextStep);
-            
-            // Fading lamps need to be constantly pinged to remain lite
-            if (deviceTypes[i] == "indicator" && nextStep == destinations[i]) {
-              destinations[i] = 0;
-              panDelays[i] = 200;
-            }
-            
-    
-          } 
-          else if (present[i] > destinations[i]) {
-            int nextStep = present[i] - 1;
-            present[i] = nextStep;
-            analogWrite(pins[i], nextStep);
-          }          
-       }
-                    
-       nextSteps[i] = millis() + panDelays[i];
-    }     
-  }
+  pan();
+  
+  expireStaleLamps();
+  
+  if (millis() > nextAnnouncement) {
+    announce();
+  }   
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  //check for paylaod; is it there at all ?
-  if (length > 0) {    
-    // create character buffer with ending null terminator (string)
-    int i = 0;
-    char message_buff[100];
-    for(i=0; i<length; i++) {
-      message_buff[i] = payload[i];
-    }
-    message_buff[i] = '\0';
+void announce() {
+  int i;
+  int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
+  for (i = 0; i < numberOfElements; i = i + 1) {
+    Serial.println("lamp:" + lampNames[i] + "[" + lampFSDs[i] + "]");
+  }
+  nextAnnouncement = millis() + announcementInterval;
+}
 
-    String payLoadString = String(message_buff);   
+void pan() {
+  int i;
+  int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
+  for (i = 0; i < numberOfElements; i = i + 1) {
+    if (lampNextPan[i] < millis()) {
+      int lampPin = lampPins[i];
+      int value = lampValues[i];
+      int target = lampTargets[i];
 
-    for (int i = 0; i < NUMBER_OF_DEVICES; i = i + 1) {
-      String deviceName = devices[i];
-      if(payLoadString.startsWith(deviceName)) {
-        String valueString = payLoadString.substring(deviceName.length() + 1, payLoadString.length());
-        
-        if (deviceTypes[i] == "lamp") {
-           if (valueString == "true") {
-             digitalWrite(pins[i], HIGH);
-           } else {
-             digitalWrite(pins[i], LOW);  
-           }
-        }
-        
-        if (deviceTypes[i] == "gauge") {
-          float value = stringToFloat(valueString);
-          setMeterTo(i, value);
-        }
-
-        if (deviceTypes[i] == "indicator") {
-           panDelays[i] = 20;
-          if (valueString == "true") {
-            destinations[i] = scales[i];            
-          } else {
-            destinations[i] = 0;            
-          }  
-        }
-        
+      int next = value;
+      if (target < value) {
+        next = next - 1;
+        analogWrite(lampPin, next);
+        lampValues[i] = next;
+      
+      } else if (target > value) {
+        next = next + 1;
+        analogWrite(lampPin, next);
+        lampValues[i] = next;
       }
-    } 
+     
+      lampNextPan[i] = millis() + lampPanSpeeds[i];
+    }
   }
 }
 
-// Calculate the correct PWM voltage required to move the a meter needle to the desired position and set this as the required destination
-void setMeterTo(int deviceNumber, float dest) {
-  if (dest >= scales[deviceNumber]) {
-    dest = scales[deviceNumber];
+void processInput() {
+  if (inputString.length() > 0 ) {
+    int i;
+    int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
+    for (i = 0; i < numberOfElements; i = i + 1) {
+      String lampName = lampNames[i];
+      String prefix = lampName + ":";
+
+      if (inputString.startsWith(prefix)) {
+        String value = inputString.substring(prefix.length());
+        int pin = lampPins[i];
+
+        double ratioOfFSD =(double) stringToInt(value) / lampFSDs[i];
+  
+        int zeroedPWMValue = 0;
+        int fsdPWMValue = 255;
+  
+        int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
+        lampTargets[i] = offset;
+        lampLastUpdated[i] = millis() + updateTTL;
+      }
+    }
+ }
+
+ inputString = "";
+ stringComplete = false;
+}
+
+void expireStaleLamps() {
+  int i;
+  int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
+  for (i = 0; i < numberOfElements; i = i + 1) {
+      long lastUpdated = lampLastUpdated[i];
+      if (lastUpdated < millis()) {
+        lampTargets[i] = 0;
+      }
+  }  
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char) Serial.read();
+    // add it to the inputString:
+    if (inChar != '\n') {
+      inputString += inChar;
+    }
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
   }
-
-  int zeroedPWMValue = 0;  // TODO
-  int fsdPWMValue = pwmMax[deviceNumber];
-
-  double ratioOfFSD = dest / scales[deviceNumber];
-  int pwmDestination = ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue)) + zeroedPWMValue;
-
-  destinations[deviceNumber] = pwmDestination;
 }
 
-float stringToFloat(String valueString) {
-  char numbers[100];
-  valueString.toCharArray(numbers, valueString.length() + 1);
-  return atof(numbers);
+int stringToInt(String value) {
+    char numbers[100];
+    value.toCharArray(numbers, value.length() + 1);
+    int dest = atoi(numbers);
+    return dest;
 }
-
 
