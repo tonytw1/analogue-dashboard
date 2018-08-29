@@ -1,5 +1,4 @@
-#include <SPI.h>
-#include <HashMap.h>
+// Drives a 7595 latched 7 segment display
 
 String serialInput = "";
 
@@ -9,27 +8,17 @@ int clockPin = 7;
 
 int count = 0;
 
-unsigned long greenNextStep = 0;
-unsigned long redNextStep = 0;
-unsigned long ampMeterNextStep = 0;
-unsigned long voltMeterNextStep = 0;
-unsigned long bigVoltMeterNextStep = 0;
 unsigned long countNextStep = 0;
 
-int ampMeterTarget = 0;
-int bigVoltMeterTarget = 0;
-int voltMeterTarget = 0;
-
 void setup() {
-    Serial.begin(9600);
-    
+    Serial.begin(115200);    
     pinMode(dataPin, OUTPUT);
     pinMode(clockPin, OUTPUT);    
-    pinMode(latchPin, OUTPUT);    
+    pinMode(latchPin, OUTPUT); 
+    loop();   
 }
 
 void loop()  {    
-   
    boolean leadingBlank = true;           
    for (int i = 3; i >= 0; i--) {     
       int num = count%10;
@@ -51,20 +40,17 @@ void loop()  {
        if (!leadingBlank) {
          bitSet(digit, i);
        }
-        
+
        digitalWrite(latchPin, LOW);
        shiftOut(dataPin, clockPin, LSBFIRST, digit);
        digitalWrite(latchPin, HIGH);
-       delay(1);         
     }
 
-    count = count + 1;
-    readSerial();    
+   readSerial();    
 }
 
 void readSerial() {
      String payLoadString = "";
-
      if (Serial.available() > 0) {
          char incomingByte = Serial.read();
          if (incomingByte == '\n') {
@@ -77,10 +63,11 @@ void readSerial() {
     } else {
        return; 
     }
-     
+
+    Serial.println(payLoadString);
     if(payLoadString.startsWith("count:")) {
          String valueString = payLoadString.substring(6, payLoadString.length());
-         count = stringToInt(valueString);         
+         count = stringToInt(valueString);
     }  
     
 }
