@@ -2,9 +2,9 @@
 
 String serialInput = "";
 
-int dataPin = 9;
-int latchPin = 8;
-int clockPin = 7;
+int dataPin = 53;
+int latchPin = 52;
+int clockPin = 51;
 
 int count = 0;
 
@@ -18,18 +18,19 @@ void setup() {
     loop();   
 }
 
-void loop()  {    
-   boolean leadingBlank = true;           
+void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
+
+ boolean leadingBlank = true;           
    for (int i = 3; i >= 0; i--) {     
-      int num = count%10;
+      int num = c%10;
        if (i == 1) {
-         num = (count/10%10);
+         num = (c/10%10);
        }
        if (i == 2) {
-         num = (count/100%10);
+         num = (c/100%10);
        }
        if (i == 3) {
-         num = (count/1000%10);
+         num = (c/1000%10);
        }
         
        if (num > 0 || i == 0) {
@@ -38,7 +39,7 @@ void loop()  {
                 
        byte digit = num << 4;
        if (!leadingBlank) {
-         bitSet(digit, i);
+         bitSet(digit, i);  // TODO document the encoding of digit; looks like half of the digit is been used as address lines
        }
 
        digitalWrite(latchPin, LOW);
@@ -46,6 +47,10 @@ void loop()  {
        digitalWrite(latchPin, HIGH);
     }
 
+}
+
+void loop()  {    
+   refreshCounter(count, dataPin, latchPin, clockPin);
    readSerial();    
 }
 
