@@ -141,8 +141,8 @@ void expireStaleLamps() {
 
 // Write out a number to a 7595 latched 7 segment display group
 void refreshCounter(int i, int c, int dataPin, int latchPin, int clockPin) {
-   int scale = pow(10, i);
-   int num = c / scale%10;
+   int scale = round(pow(10, i));
+   int num = c / scale % 10;
     
    byte digit = num << 4;
 
