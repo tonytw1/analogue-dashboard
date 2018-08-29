@@ -120,9 +120,8 @@ void processInput() {
 }
 
 void expireStaleLamps() {
-  int i;
   int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
-  for (i = 0; i < numberOfElements; i = i + 1) {
+  for (int i = 0; i < numberOfElements; i = i + 1) {
       long lastUpdated = lampLastUpdated[i];
       if (lastUpdated < millis()) {
         lampTargets[i] = 0;
