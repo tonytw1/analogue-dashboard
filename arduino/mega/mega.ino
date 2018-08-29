@@ -20,6 +20,8 @@ int counterDataPin = 53;
 int counterLatchPin = 52;
 int counterClockPin = 51;
 
+int counterMultiplexSegment = 0;
+
 void setup() {
   inputString.reserve(200);
   Serial.begin(115200);
@@ -59,13 +61,15 @@ void announce() {
   for (i = 0; i < numberOfElements; i = i + 1) {
     Serial.println("lamp:" + lampNames[i] + "[" + lampFSDs[i] + "]");
   }
+    
   nextAnnouncement = millis() + announcementInterval;
 }
 
 void pan() {
-  int i;
   int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
-  for (i = 0; i < numberOfElements; i = i + 1) {
+  for (int i = 0; i < numberOfElements; i = i + 1) {
+    int current = lampValues[i];
+    
     if (lampNextPan[i] < millis()) {
       int value = lampValues[i];
       int target = lampTargets[i];
@@ -81,17 +85,24 @@ void pan() {
     
     String lampName = lampNames[i]; 
     int next = lampValues[i];
+    
     if (lampName == "counter") {
-      refreshCounter(next, counterDataPin, counterLatchPin, counterClockPin);        
-
-    } else {      
-      double ratioOfFSD =(double) next / lampFSDs[i];  
-      int zeroedPWMValue = 0;
-      int fsdPWMValue = 255;
-      int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
-
-      int lampPin = lampPins[i];     
-      analogWrite(lampPin, offset);
+       refreshCounter(counterMultiplexSegment, next, counterDataPin, counterLatchPin, counterClockPin);
+      counterMultiplexSegment =counterMultiplexSegment + 1;
+       if (counterMultiplexSegment > 3) {  // TODO remove hard coded length
+         counterMultiplexSegment = 0;
+       }
+                    
+    } else {
+      if (next != current) {      
+        double ratioOfFSD =(double) next / lampFSDs[i];  
+        int zeroedPWMValue = 0;
+        int fsdPWMValue = 255;
+        int offset = zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
+  
+        int lampPin = lampPins[i];     
+        analogWrite(lampPin, offset);      
+      }
     }   
   }
   
@@ -129,22 +140,20 @@ void expireStaleLamps() {
 }
 
 // Write out a number to a 7595 latched 7 segment display group
-void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
- for (int i = 3; i >= 0; i--) {      // TODO remove hardcoded length
-     int scale = pow(10, i);
-     int num = c / scale%10;
+void refreshCounter(int i, int c, int dataPin, int latchPin, int clockPin) {
+   int scale = pow(10, i);
+   int num = c / scale%10;
     
-     byte digit = num << 4;
+   byte digit = num << 4;
 
-     boolean leadingBlank = num == 0 & scale > 1 && (scale > c);           
-     if (!leadingBlank) {
-       bitSet(digit, i);  // TODO document the encoding of digit; looks like half of the digit is been used as address lines
-     }
+   boolean leadingBlank = num == 0 & scale > 1 && (scale > c);           
+   if (!leadingBlank) {
+     bitSet(digit, i);  // TODO document the encoding of digit; looks like half of the digit is been used as address lines
+   }
 
-     digitalWrite(latchPin, LOW);
-     shiftOut(dataPin, clockPin, LSBFIRST, digit);
-     digitalWrite(latchPin, HIGH);
-  }
+   digitalWrite(latchPin, LOW);
+   shiftOut(dataPin, clockPin, LSBFIRST, digit);
+   digitalWrite(latchPin, HIGH);
 }
 
 void serialEvent() {
