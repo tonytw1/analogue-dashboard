@@ -130,15 +130,13 @@ void expireStaleLamps() {
 
 // Write out a number to a 7595 latched 7 segment display group
 void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
- boolean leadingBlank = true;           
  for (int i = 3; i >= 0; i--) {     
      int scale = pow(10, i);
      int num = c / scale%10;      
-     if (num > 0 || i == 0) {
-       leadingBlank = false; 
-     }
-              
+    
      byte digit = num << 4;
+     
+     boolean leadingBlank = false;              
      if (!leadingBlank) {
        bitSet(digit, i);  // TODO document the encoding of digit; looks like half of the digit is been used as address lines
      }
@@ -147,7 +145,6 @@ void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
      shiftOut(dataPin, clockPin, LSBFIRST, digit);
      digitalWrite(latchPin, HIGH);
   }
-
 }
 
 void serialEvent() {
