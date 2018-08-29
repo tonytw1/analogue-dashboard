@@ -133,15 +133,19 @@ void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
  boolean leadingBlank = true;           
  for (int i = 3; i >= 0; i--) {     
     int num = c%10;
+
+     int scale = 1;
      if (i == 1) {
-       num = (c/10%10);
+       scale = 10;
      }
      if (i == 2) {
-       num = (c/100%10);
+       scale = 100;
      }
      if (i == 3) {
-       num = (c/1000%10);
+       scale = 1000;
      }
+     
+     num = c / scale%10;
       
      if (num > 0 || i == 0) {
        leadingBlank = false; 
