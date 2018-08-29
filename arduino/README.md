@@ -1,4 +1,4 @@
-#Arduino sketches
+# Arduino sketches
 
 Controls the Arduino board which drives the lamps and gauges.
 
@@ -22,4 +22,7 @@ The board periodally announces the available lamps and gauges over the serial in
 ie.
 ```
 volts:80
+amps:100
+greenlamp:1
+redlamp:1
 ```
