@@ -14,7 +14,7 @@ unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0};
 int lampValues[] = {0, 0, 0, 0, 0, 0, 0};
-long lampLastUpdated[] = {0, 0, 0, 0, 0, 0, 0};
+long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0};
 
 
 int counterDataPin = 53;
@@ -110,7 +110,7 @@ void processInput() {
         String value = inputString.substring(prefix.length());
         int valueAsInt = stringToInt(value);     
         lampTargets[i] = valueAsInt;         
-        lampLastUpdated[i] = millis() + updateTTL;
+        lampExpiry[i] = millis() + updateTTL;
       }
     }
  }
@@ -122,11 +122,11 @@ void processInput() {
 void expireStaleLamps() {
   int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
   for (int i = 0; i < numberOfElements; i = i + 1) {
-      long lastUpdated = lampLastUpdated[i];
-      if (lastUpdated < millis()) {
-        lampTargets[i] = 0;
-      }
-  }  
+    long expiry = lampExpiry[i];
+    if (expiry < millis()) {
+      lampTargets[i] = 0;
+    }
+  }
 }
 
 // Write out a number to a 7595 latched 7 segment display group
