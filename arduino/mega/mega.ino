@@ -9,7 +9,7 @@ boolean stringComplete = false;  // whether the string is complete
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7};
 String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0};
-unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 10};
+unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 0};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0};
@@ -132,21 +132,8 @@ void expireStaleLamps() {
 void refreshCounter(int c, int dataPin, int latchPin, int clockPin) {
  boolean leadingBlank = true;           
  for (int i = 3; i >= 0; i--) {     
-    int num = c%10;
-
-     int scale = 1;
-     if (i == 1) {
-       scale = 10;
-     }
-     if (i == 2) {
-       scale = 100;
-     }
-     if (i == 3) {
-       scale = 1000;
-     }
-     
-     num = c / scale%10;
-      
+     int scale = pow(10, i);
+     int num = c / scale%10;      
      if (num > 0 || i == 0) {
        leadingBlank = false; 
      }
