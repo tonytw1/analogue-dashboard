@@ -7,7 +7,7 @@ String inputString = "";     // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7};
-String lampNames[] = {"green", "red", "green2", "red2", "amps", "volts", "counter"};
+String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0};
 unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 10};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999};
@@ -15,7 +15,6 @@ unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999};
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0};
 int lampValues[] = {0, 0, 0, 0, 0, 0, 0};
 long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0};
-
 
 int counterDataPin = 53;
 int counterLatchPin = 52;
