@@ -158,13 +158,11 @@ void refreshCounter(int i, int c, int dataPin, int latchPin, int clockPin) {
 
 void serialEvent() {
   while (Serial.available()) {
-    char inChar = (char) Serial.read();
-    // add it to the inputString:
-    if (inChar != '\n') {
-      inputString += inChar;
-    }
+    char inChar = (char) Serial.read();   
     if (inChar == '\n') {
-      stringComplete = true;
+       stringComplete = true;
+    } else {
+      inputString += inChar;     
     }
   }
 }
