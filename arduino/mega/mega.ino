@@ -139,20 +139,33 @@ void expireStaleLamps() {
   }
 }
 
-// Write out a number to a 7595 latched 7 segment display group
-void refreshCounter(int i, int c, int dataPin, int latchPin, int clockPin) {
-   int scale = round(pow(10, i));
+// Write out a digit to a 7595 latched 7 segment display group and select the multiplexed module
+void refreshCounter(int module, int c, int dataPin, int latchPin, int clockPin) {
+   int scale = round(pow(10, module));
    int num = c / scale % 10;
-    
-   byte digit = num << 4;
 
+   // Building the 8 bit byte we are going to latch into the 595.
+   // This byte will contain 4 bits of binary number and 4 bits to select the active display segment
+   // (the 4 segments are multiplexed - only 1 is actually lit at anyone time).
+   // ie. for the digit 3:
+   // [00110000]
+      
+   // Left shift the first 4 bits of the digit into the byte.
+   byte data = num << 4; 
+
+   // We'd like to turn off the leading zeros on the display to improve readability.
    boolean leadingBlank = num == 0 & scale > 1 && (scale > c);           
    if (!leadingBlank) {
-     bitSet(digit, i);  // TODO document the encoding of digit; looks like half of the digit is been used as address lines
+     // The individual 7 segment display modules are selected by the 4 right most bits of the 595.
+     // To display the current digit we set the bit for this module.
+     // ie. to display a 3 on the 2nd module
+     // [00110010]
+     bitSet(digit, module);
    }
 
+   // Send the byte the 595 and latch it
    digitalWrite(latchPin, LOW);
-   shiftOut(dataPin, clockPin, LSBFIRST, digit);
+   shiftOut(dataPin, clockPin, LSBFIRST, data);
    digitalWrite(latchPin, HIGH);
 }
 
