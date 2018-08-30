@@ -172,7 +172,6 @@ void serialEvent() {
 int stringToInt(String value) {
     char numbers[100];
     value.toCharArray(numbers, value.length() + 1);
-    int dest = atoi(numbers);
-    return dest;
+    return atoi(numbers);
 }
 
