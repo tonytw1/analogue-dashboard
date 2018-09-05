@@ -118,7 +118,10 @@ void processInput() {
 
       if (inputString.startsWith(prefix)) {
         String value = inputString.substring(prefix.length());
-        int valueAsInt = stringToInt(value);     
+        int valueAsInt = stringToInt(value);
+        if (valueAsInt < 0) {
+          valueAsInt = 0;
+        }
         lampTargets[i] = valueAsInt;         
         lampExpiry[i] = millis() + updateTTL;
       }
@@ -160,7 +163,7 @@ void refreshCounter(int module, int c, int dataPin, int latchPin, int clockPin) 
      // To display the current digit we set the bit for this module.
      // ie. to display a 3 on the 2nd module
      // [00110010]
-     bitSet(digit, module);
+     bitSet(data, module);
    }
 
    // Send the byte the 595 and latch it
