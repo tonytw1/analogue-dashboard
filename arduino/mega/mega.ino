@@ -9,7 +9,7 @@ boolean stringComplete = false;  // whether the string is complete
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4};
 String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 100, 50, 50};
+unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 3, 50, 50};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -42,14 +42,9 @@ void setup() {
   }
 }
 
-void loop() {
-  if (stringComplete) {
-    processInput();
-  }
-
+void loop() { 
   pan();
   expireStaleLamps();
-  
   if (millis() > nextAnnouncement) {
     announce();
   }   
@@ -104,42 +99,6 @@ void pan() {
   
 }
 
-void processInput() {
-  if (inputString.length() > 0 ) {
-    int i;
-    int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
-    for (i = 0; i < numberOfElements; i = i + 1) {
-      String lampName = lampNames[i];
-      String prefix = lampName + ":";
-
-      if (inputString.startsWith(prefix)) {
-        String value = inputString.substring(prefix.length());
-        double valueAsDouble = stringToDouble(value);
-        if (valueAsDouble < 0) {
-          valueAsDouble = 0;
-        }
-
-        if (lampName == "counter") {
-          lampTargets[i] = (int) valueAsDouble;
-
-        } else {
-          // For meters set the target to the desired PWM value
-          double ratioOfFSD = valueAsDouble / lampFSDs[i];
-          int zeroedPWMValue = 0;
-          int fsdPWMValue = 255;
-          int offset = (int) zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
-          lampTargets[i] = offset;               
-        }
-        
-        lampExpiry[i] = millis() + updateTTL;
-      }      
-    }
- }
-
- inputString = "";
- stringComplete = false;
-}
-
 void expireStaleLamps() {
   int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
   for (int i = 0; i < numberOfElements; i = i + 1) {
@@ -187,6 +146,45 @@ void serialEvent() {
        stringComplete = true;
     } else {
       inputString += inChar;     
+    }
+
+    if (stringComplete) {
+      processInput(inputString);
+      inputString = "";
+      stringComplete = false;
+    }
+  }
+}
+
+void processInput(String input) {
+  if (input.length() > 0 ) {
+    int i;
+    int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
+    for (i = 0; i < numberOfElements; i = i + 1) {
+      String lampName = lampNames[i];
+      String prefix = lampName + ":";
+
+      if (input.startsWith(prefix)) {
+        String value = input.substring(prefix.length());
+        double valueAsDouble = stringToDouble(value);
+        if (valueAsDouble < 0) {
+          valueAsDouble = 0;
+        }
+
+        if (lampName == "counter") {
+          lampTargets[i] = (int) valueAsDouble;
+
+        } else {
+          // For meters set the target to the desired PWM value
+          double ratioOfFSD = valueAsDouble / lampFSDs[i];
+          int zeroedPWMValue = 0;
+          int fsdPWMValue = 255;
+          int offset = (int) zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
+          lampTargets[i] = offset;               
+        }
+        
+        lampExpiry[i] = millis() + updateTTL;
+      }      
     }
   }
 }
