@@ -1,4 +1,4 @@
-unsigned int announcementInterval = 10000;
+unsigned int announcementInterval = 60000;
 unsigned long updateTTL = 90000;
 
 unsigned long nextAnnouncement = 0;
@@ -6,15 +6,15 @@ unsigned long nextAnnouncement = 0;
 String inputString = "";     // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
-unsigned int lampPins[] = {8, 9, 10, 11, 6, 7};
-String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter"};
-unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0};
-unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 0};
-unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999};
+unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4};
+String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2"};
+unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 100, 500, 500};
+unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10};
 
-int lampTargets[] = {0, 0, 0, 0, 0, 0, 0};
-int lampValues[] = {0, 0, 0, 0, 0, 0, 0};
-long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0};
+int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+int lampValues[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 int counterDataPin = 53;
 int counterLatchPin = 52;
@@ -122,6 +122,7 @@ void processInput() {
         if (valueAsInt < 0) {
           valueAsInt = 0;
         }
+        Serial.write(valueAsInt);
         lampTargets[i] = valueAsInt;         
         lampExpiry[i] = millis() + updateTTL;
       }
