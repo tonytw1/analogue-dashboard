@@ -9,7 +9,7 @@ boolean stringComplete = false;  // whether the string is complete
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4};
 String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned int lampPanSpeeds[] = {5, 5, 5, 5, 100, 100, 3, 50, 50};
+unsigned int lampPanSpeeds[] = {1, 1, 1, 1, 100, 100, 3, 50, 50};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -94,11 +94,11 @@ void pan() {
         int lampPin = lampPins[i];     
         analogWrite(lampPin, next);      
       }
-    }   
+    }
   }
-  
 }
 
+// To avoid false positives the dashboard should switch off indicators which have stale data
 void expireStaleLamps() {
   int numberOfElements = sizeof(lampNames) / sizeof(lampNames[0]);
   for (int i = 0; i < numberOfElements; i = i + 1) {
@@ -139,6 +139,7 @@ void refreshCounter(int module, int c, int dataPin, int latchPin, int clockPin) 
    digitalWrite(latchPin, HIGH);
 }
 
+// Callback for serial events
 void serialEvent() {
   while (Serial.available()) {
     char inChar = (char) Serial.read();   
@@ -166,7 +167,7 @@ void processInput(String input) {
 
       if (input.startsWith(prefix)) {
         String value = input.substring(prefix.length());
-        double valueAsDouble = stringToDouble(value);
+        double valueAsDouble = value.toDouble();
         if (valueAsDouble < 0) {
           valueAsDouble = 0;
         }
@@ -188,8 +189,3 @@ void processInput(String input) {
     }
   }
 }
-
-double stringToDouble(String value) {
-    return value.toDouble();
-}
-
