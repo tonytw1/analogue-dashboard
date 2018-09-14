@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-# TODO Using passive scans only
 from bluepy.btle import Scanner, DefaultDelegate
 import paho.mqtt.client as mqtt
 import re
@@ -20,8 +18,8 @@ class ScanDelegate(DefaultDelegate):
 	message = short_addr + ":" + str(dev.rssi)
 	mqtt_client.publish(mqtt_topic, message)
 
-scanner = Scanner(0).withDelegate(ScanDelegate())
-scanner.start()
+scanner = Scanner().withDelegate(ScanDelegate())
+scanner.start(passive=True)
 while True:
     print "Still running..."
     scanner.process()
