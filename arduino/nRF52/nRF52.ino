@@ -11,9 +11,16 @@ void setup()
   
   // Set max power. Accepted values are: -40, -30, -20, -16, -12, -8, -4, 0, 4
   Bluefruit.setTxPower(0);
+
+  attachInterrupt(15, incrementCount, RISING);
   
   // Setup the advertising packet
   startAdv();
+}
+
+void incrementCount() {
+  count = count + 1;
+ 
 }
 
 bool setAdvertisingData(BLEAdvertising& adv, int count)
@@ -48,20 +55,15 @@ void startAdv(void)
    */
   //Bluefruit.Advertising.setType(BLE_GAP_ADV_TYPE_ADV_NONCONN_IND);
   Bluefruit.Advertising.restartOnDisconnect(true);
-  Bluefruit.Advertising.setInterval(1600, 1600);    // in unit of 0.625 ms
+  Bluefruit.Advertising.setInterval(160, 160);    // in unit of 0.625 ms
   Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
   Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
 }
 
 void loop() 
 {
-  delay(1000);
-  if (count < 255) {
-    count = count + 1;
-  } else {
-    count = 0;
-  }
+  delay(1000);                   // 0 = Don't stop advertising after n seconds  
   Bluefruit.Advertising.stop();
   setAdvertisingData(Bluefruit.Advertising, count);
-  Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
+  Bluefruit.Advertising.start(0);
 }
