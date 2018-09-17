@@ -15,12 +15,15 @@ class ScanDelegate(DefaultDelegate):
     def handleDiscovery(self, dev, isNewDev, isNewData):
 	print "Received new data from", dev.addr, dev.getScanData(), dev.rssi, dev.addrType, dev.getValueText(dev.addrType), dev.updateCount
 	short_addr = re.sub(':', '', dev.addr)
-	message = short_addr + ":" + str(dev.rssi)
-	mqtt_client.publish(mqtt_topic, message)
+	data_items = dev.getScanData()
+	manufacturer_specific_data_item = filter(lambda x: x[0] == 255, data_items)
+	if (len(manufacturer_specific_data_item) > 0):
+		value = manufacturer_specific_value = manufacturer_specific_data_item[0][2]
+		message = short_addr + ":" + value
+		mqtt_client.publish(mqtt_topic, message)
 
 scanner = Scanner().withDelegate(ScanDelegate())
 scanner.start(passive=True)
 while True:
     print "Still running..."
     scanner.process()
-
