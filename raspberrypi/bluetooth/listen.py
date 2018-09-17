@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from bluepy.btle import Scanner, DefaultDelegate
+from bluepy.btle import Scanner, DefaultDelegate, ScanEntry
 import paho.mqtt.client as mqtt
 import re
 
@@ -16,7 +16,7 @@ class ScanDelegate(DefaultDelegate):
 	print "Received new data from", dev.addr, dev.getScanData(), dev.rssi, dev.addrType, dev.getValueText(dev.addrType), dev.updateCount
 	short_addr = re.sub(':', '', dev.addr)
 	data_items = dev.getScanData()
-	manufacturer_specific_data_item = filter(lambda x: x[0] == 255, data_items)
+	manufacturer_specific_data_item = filter(lambda x: x[0] == ScanEntry.MANUFACTURER, data_items)
 	if (len(manufacturer_specific_data_item) > 0):
 		value = manufacturer_specific_value = manufacturer_specific_data_item[0][2]
 		message = short_addr + ":" + value
