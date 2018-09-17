@@ -12,7 +12,7 @@ void setup()
   // Set max power. Accepted values are: -40, -30, -20, -16, -12, -8, -4, 0, 4
   Bluefruit.setTxPower(0);
 
-  attachInterrupt(15, incrementCount, RISING);
+  attachInterrupt(A0, incrementCount, RISING);
   
   // Setup the advertising packet
   startAdv();
