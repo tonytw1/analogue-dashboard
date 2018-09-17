@@ -31,6 +31,8 @@ uint8_t beaconUuid[16] =
 // UUID, Major, Minor, RSSI @ 1M
 BLEBeacon beacon(beaconUuid, 0x0000, 0x0000, -54);
 
+int count = 0;
+
 void setup() 
 {
   Serial.begin(115200);
@@ -56,32 +58,23 @@ void setup()
   Serial.println("Broadcasting beacon, open your beacon app to test");
 
   // Suspend Loop() to save power, since we didn't have any code there
-  suspendLoop();
+  // suspendLoop();
 }
 
 
-bool setBeaconData(BLEAdvertising& adv)
+bool setAdvertisingData(BLEAdvertising& adv, int count)
 {
   adv.clearData();
 
   struct ATTR_PACKED
   {
-    uint8_t  beacon_type;
-    uint8_t  beacon_len;
-
-    uint16_t major;
-    uint16_t minor;
-    int8_t   rssi_at_1m;
+    int8_t   count;
   } beacon_data =
   {
-      .beacon_type = 0x02,
-      .beacon_len  = sizeof(beacon_data) - 4, // len of uuid + major + minor + rssi
-      .major = 0x0001,
-      .minor = 0x0002,
-      .rssi_at_1m = 0x00
+      .count = count
   };
 
-  VERIFY_STATIC(sizeof(beacon_data) == 7);
+  VERIFY_STATIC(sizeof(beacon_data) == 1);
 
 
   adv.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
@@ -92,7 +85,7 @@ void startAdv(void)
 {  
 
   //Bluefruit.Advertising.setBeacon(beacon);
-  setBeaconData(Bluefruit.Advertising);
+  setAdvertisingData(Bluefruit.Advertising, count);
   // Secondary Scan Response packet (optional)
   // Since there is no room for 'Name' in Advertising packet
   Bluefruit.ScanResponse.addName();
@@ -115,6 +108,14 @@ void startAdv(void)
 
 void loop() 
 {
-  // loop is already suspended, CPU will not run loop() at all
+  delay(1000);
+  if (count < 255) {
+    count = count + 1;
+  } else {
+    count = 0;
+  }
+  Bluefruit.Advertising.stop();
+  setAdvertisingData(Bluefruit.Advertising, count);
+  Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
 }
 
