@@ -3,8 +3,7 @@ unsigned long updateTTL = 90000;
 
 unsigned long nextAnnouncement = 0;
 
-String inputString = "";     // a string to hold incoming data
-boolean stringComplete = false;  // whether the string is complete
+String inputString = "";     // a buffer to hold incoming serial data
 
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4};
 String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2"};
@@ -144,15 +143,10 @@ void serialEvent() {
   while (Serial.available()) {
     char inChar = (char) Serial.read();   
     if (inChar == '\n') {
-       stringComplete = true;
-    } else {
-      inputString += inChar;     
-    }
-
-    if (stringComplete) {
       processInput(inputString);
       inputString = "";
-      stringComplete = false;
+    } else {
+      inputString += inChar;     
     }
   }
 }
