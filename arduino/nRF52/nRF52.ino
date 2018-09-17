@@ -66,29 +66,23 @@ bool setBeaconData(BLEAdvertising& adv)
 
   struct ATTR_PACKED
   {
-    uint16_t manufacturer;
-
     uint8_t  beacon_type;
     uint8_t  beacon_len;
 
-    uint8_t  uuid128[16];
     uint16_t major;
     uint16_t minor;
     int8_t   rssi_at_1m;
   } beacon_data =
   {
-      .manufacturer = MANUFACTURER_ID,
       .beacon_type = 0x02,
       .beacon_len  = sizeof(beacon_data) - 4, // len of uuid + major + minor + rssi
-      .uuid128 = { 0 },
       .major = 0x0001,
-      .minor = 0x0003,
+      .minor = 0x0002,
       .rssi_at_1m = 0x00
   };
 
-  VERIFY_STATIC(sizeof(beacon_data) == 25);
+  VERIFY_STATIC(sizeof(beacon_data) == 7);
 
-  memcpy(beacon_data.uuid128, beaconUuid, 16);
 
   adv.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
   return adv.addData(BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA, &beacon_data, sizeof(beacon_data));
@@ -96,8 +90,9 @@ bool setBeaconData(BLEAdvertising& adv)
 
 void startAdv(void)
 {  
+
+  //Bluefruit.Advertising.setBeacon(beacon);
   setBeaconData(Bluefruit.Advertising);
-  
   // Secondary Scan Response packet (optional)
   // Since there is no room for 'Name' in Advertising packet
   Bluefruit.ScanResponse.addName();
