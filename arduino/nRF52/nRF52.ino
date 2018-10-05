@@ -1,6 +1,6 @@
 #include <bluefruit.h>
 
-int count = 0;
+unsigned int count = 0;
 
 void setup() 
 {
@@ -19,25 +19,20 @@ void setup()
 }
 
 void incrementCount() {
-  if (count < 32767) {
-    count = count + 1;
-  } else {
-    count = 0;
-  }
+  count = (unsigned int) (count +  1);
 }
 
-bool setAdvertisingData(BLEAdvertising& adv, int count)
-{
+bool setAdvertisingData(BLEAdvertising& adv, unsigned int count)
+{  
   struct ATTR_PACKED
   {
-    int16_t count;
+    uint16_t count;
   } beacon_data =
   {
-      .count = count
+    count = count
   };
 
   VERIFY_STATIC(sizeof(beacon_data) == 2);
-
   adv.clearData();
   adv.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
   return adv.addData(BLE_GAP_AD_TYPE_MANUFACTURER_SPECIFIC_DATA, &beacon_data, sizeof(beacon_data));
