@@ -19,21 +19,24 @@ void setup()
 }
 
 void incrementCount() {
-  count = count + 1;
- 
+  if (count < 32767) {
+    count = count + 1;
+  } else {
+    count = 0;
+  }
 }
 
 bool setAdvertisingData(BLEAdvertising& adv, int count)
 {
   struct ATTR_PACKED
   {
-    int8_t count;
+    int16_t count;
   } beacon_data =
   {
       .count = count
   };
 
-  VERIFY_STATIC(sizeof(beacon_data) == 1);
+  VERIFY_STATIC(sizeof(beacon_data) == 2);
 
   adv.clearData();
   adv.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
