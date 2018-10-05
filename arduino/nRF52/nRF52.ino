@@ -53,7 +53,7 @@ void startAdv(void)
    */
   //Bluefruit.Advertising.setType(BLE_GAP_ADV_TYPE_ADV_NONCONN_IND);
   Bluefruit.Advertising.restartOnDisconnect(true);
-  Bluefruit.Advertising.setInterval(160, 160);    // in unit of 0.625 ms
+  Bluefruit.Advertising.setInterval(1600, 1600);    // in unit of 0.625 ms
   Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
   Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
 }
