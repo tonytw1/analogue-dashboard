@@ -11,6 +11,10 @@ mqtt_topic = 'metrics'
 mqtt_client = mqtt.Client()
 mqtt_client.connect("10.0.45.11", 32183, 60)
 
+joules_per_kilowatt_hour = 60 * 60 * 1000
+ticks_per_kilowatt_hour = 800
+joules_per_tick = joules_per_kilowatt_hour / ticks_per_kilowatt_hour
+
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
@@ -31,11 +35,17 @@ class ScanDelegate(DefaultDelegate):
 			pulse_duration_bytes = binascii.unhexlify(pulse_duration_hex)
 			pulse_duration = struct.unpack('L', pulse_duration_bytes)[0]
 
+			ticks_per_second = float(1000) / pulse_duration
+			watts = int(round(ticks_per_second * joules_per_tick))
+
 			count_message = short_addr + "count:" + str(count)
 			mqtt_client.publish(mqtt_topic, count_message)
 
 			pulse_duration_message = short_addr + "pulseduration:" + str(pulse_duration)
 			mqtt_client.publish(mqtt_topic, pulse_duration_message)
+
+			watts_message = short_addr + "watts:" + str(watts)
+			mqtt_client.publish(mqtt_topic, watts_message)
 
 scanner = Scanner().withDelegate(ScanDelegate())
 scanner.start(passive=True)
