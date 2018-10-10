@@ -35,8 +35,15 @@ class ScanDelegate(DefaultDelegate):
 			pulse_duration_bytes = binascii.unhexlify(pulse_duration_hex)
 			pulse_duration = struct.unpack('L', pulse_duration_bytes)[0]
 
-			ticks_per_second = float(1000) / pulse_duration
-			watts = int(round(ticks_per_second * joules_per_tick))
+			battery_voltage_hex = value[12:16]
+			battery_voltage_bytes = binascii.unhexlify(battery_voltage_hex)
+			battery_voltage = unpack('H', battery_voltage_bytes)[0]			
+
+			if (pulse_duration > 0):
+				ticks_per_second = float(1000) / pulse_duration
+				watts = int(round(ticks_per_second * joules_per_tick))
+	         		watts_message = short_addr + "watts:" + str(watts)
+                        	mqtt_client.publish(mqtt_topic, watts_message)
 
 			count_message = short_addr + "count:" + str(count)
 			mqtt_client.publish(mqtt_topic, count_message)
@@ -44,8 +51,8 @@ class ScanDelegate(DefaultDelegate):
 			pulse_duration_message = short_addr + "pulseduration:" + str(pulse_duration)
 			mqtt_client.publish(mqtt_topic, pulse_duration_message)
 
-			watts_message = short_addr + "watts:" + str(watts)
-			mqtt_client.publish(mqtt_topic, watts_message)
+			battery_message = short_addr + "battery:" + str(battery_voltage)
+			mqtt_client.publish(mqtt_topic, battery_message)
 
 scanner = Scanner().withDelegate(ScanDelegate())
 scanner.start(passive=True)
