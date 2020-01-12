@@ -1,19 +1,19 @@
 unsigned int announcementInterval = 60000;
-unsigned long updateTTL = 90000;
 
 unsigned long nextAnnouncement = 0;
 
 String inputString = "";     // a buffer to hold incoming serial data
 
 unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4, 50};
-String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2", "counteractivity"};
+String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2", "yellow"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned int lampPanSpeeds[] = {1, 1, 1, 1, 100, 100, 3, 50, 50, 1};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10, 1};
+unsigned long lampTTLs[] = {60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 1000};
 
-int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-int lampValues[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int lampValues[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+long lampExpiry[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 int counterDataPin = 53;
 int counterLatchPin = 52;
@@ -177,8 +177,9 @@ void processInput(String input) {
           int offset = (int) zeroedPWMValue + ((ratioOfFSD) * (fsdPWMValue - zeroedPWMValue));
           lampTargets[i] = offset;               
         }
-        
-        lampExpiry[i] = millis() + updateTTL;
+
+        unsigned long updateTTLForLamp = lampTTLs[i];
+        lampExpiry[i] = millis() + updateTTLForLamp;
       }      
     }
   }
