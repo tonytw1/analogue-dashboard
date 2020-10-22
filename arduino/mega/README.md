@@ -26,3 +26,14 @@ amps:100
 greenlamp:1
 redlamp:1
 ```
+
+
+## Install
+
+From the Arduino command line:
+
+```
+arduino-cli compile -b arduino:avr:mega mega
+arduino-cli -v upload -b arduino:avr:mega -p /dev/ttyACM0 mega/
+```
+
