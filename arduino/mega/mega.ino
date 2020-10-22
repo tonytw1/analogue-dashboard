@@ -8,7 +8,7 @@ unsigned int lampPins[] = {8, 9, 10, 11, 6, 7, 0, 5, 4, 50, 22, 23, 24, 25};
 String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counter", "linear1", "linear2", "yellow", "lamp1", "lamp2", "lamp3", "lamp4"};
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned int lampPanSpeeds[] = {1, 1, 1, 1, 100, 100, 3, 50, 50, 1, 1, 1, 1, 1};
-unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10, 1};
+unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10, 1, 1, 1, 1, 1};
 unsigned long lampTTLs[] = {60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 1000, 60000, 60000, 60000, 60000};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
