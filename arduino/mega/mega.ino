@@ -9,7 +9,7 @@ String lampNames[] = {"green", "red", "red2", "green2", "amps", "volts", "counte
 unsigned long lampNextPan[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned int lampPanSpeeds[] = {1, 1, 1, 1, 100, 100, 3, 50, 50, 1, 1, 1, 1, 1};
 unsigned int lampFSDs[] = {1, 1, 1, 1, 100, 80, 9999, 10, 10, 1, 1, 1, 1, 1};
-unsigned long lampTTLs[] = {60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 1000, 60000, 60000, 60000, 60000};
+unsigned long lampTTLs[] = {60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 1000, 600000, 600000, 600000, 600000};
 
 int lampTargets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int lampValues[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
