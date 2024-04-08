@@ -56,6 +56,6 @@ function bindSerialToMqtt(options){
 bindSerialToMqtt({
   serialPort: serialPort,
   client: client,
-  transmitTopic: 'gauges',
-  receiveTopic: 'gauges'
+  transmitTopic: 'gauges/announcements',
+  receiveTopic: 'gauges/signals'
 });
