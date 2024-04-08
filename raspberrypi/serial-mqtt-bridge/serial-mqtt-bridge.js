@@ -1,9 +1,9 @@
 var SerialPort = require('serialport');
-var bindPhysical = require('mqtt-serial').bindPhysical;
+//var bindPhysical = require('mqtt-serial').bindPhysical;
 var mqtt = require('mqtt');
  
 // setup the mqtt client with port, host, and optional credentials 
-var client = mqtt.connect('mqtt://127.0.0.1:1883');
+var client = mqtt.connect('mqtt://10.0.46.10:32183');
 
 // setup a connection to a physical serial port 
 var serialPort = new SerialPort('/dev/ttyACM0',{
@@ -18,13 +18,15 @@ function bindSerialToMqtt(options){
   var receiveTopic = options.receiveTopic;
   var transmitTopic = options.transmitTopic;
   var qos = options.qos || 0;
-   
+
   var parser = serialPort.pipe(new SerialPort.parsers.Readline);
 
   function serialWrite(data){
     try{
-      console.log('Writing to serial port: ', data.toString());
+      // console.log('Writing to serial port: ', data.toString());
       serialPort.write(data);
+      serialPort.drain();
+
     }catch(exp){
       console.log('error reading message', exp);
     }
@@ -32,17 +34,18 @@ function bindSerialToMqtt(options){
 
   client.subscribe(receiveTopic, {qos: qos});
 
-  parser.on('data', function(data){	// Important; subscribing to parser.on gives you full lines; serialPort.on gives you incomplete chunks
-    console.log("Publishing serial line to MQTT: " + data.toString());
+  parser.on('data', function(data) {	// Important; subscribing to parser.on gives you full lines; serialPort.on gives you incomplete chunks
+    //console.log("Publishing serial line to MQTT: " + data.toString());
     client.publish(transmitTopic, data, {qos: qos});
   });
 
   client.on('message', function(topic, data, packet){
-    try{
+    try {
       if(topic === receiveTopic){
-        serialWrite(data);
+	//console.log("Serial writing: " + data);
+        serialWrite(data + "\n");
       }
-    }catch(exp){
+    } catch(exp){
       console.log('error on message', exp);
       //self.emit('error', 'error receiving message: ' + exp);
     }
