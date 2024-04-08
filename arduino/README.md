@@ -33,7 +33,7 @@ redlamp:1
 From the Arduino command line:
 
 ```
-arduino-cli compile -b arduino:avr:mega mega
-arduino-cli -v upload -b arduino:avr:mega -p /dev/ttyACM0 mega/
+arduino-cli compile --build-path $PWD/ArduinoOutput --fqbn arduino:avr:mega mega
+arduino-cli upload --input-dir $PWD/ArduinoOutput -p /dev/ttyACM0 --fqbn arduino:avr:mega mega
 ```
 
